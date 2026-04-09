@@ -6,10 +6,11 @@ use spacetimedb_sdk::{DbContext, Table};
 
 fn main() {
     // The URI of the SpacetimeDB instance hosting our chat module.
-    let host: String = env::var("SPACETIMEDB_HOST").unwrap_or("http://localhost:3000".to_string());
+    let host: String =
+        env::var("SPACETIMEDB_HOST").unwrap_or("https://maincloud.spacetimedb.com".to_string());
 
     // The module name we chose when we published our module.
-    let db_name: String = env::var("SPACETIMEDB_DB_NAME").unwrap_or("my-db".to_string());
+    let db_name: String = env::var("SPACETIMEDB_DB_NAME").unwrap_or("space-todo-fn915".to_string());
 
     // Connect to the database
     let conn = DbConnection::builder()
@@ -38,6 +39,10 @@ fn main() {
     conn.db().person().on_insert(|_ctx, person| {
         println!("New person: {}", person.name);
     });
+
+    for ele in conn.db().person().iter() {
+        println!("{}", ele.name);
+    }
 
     // Keep the main thread alive so the connection stays open
     loop {
