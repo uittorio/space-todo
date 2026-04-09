@@ -1,10 +1,14 @@
 mod module_bindings;
+use dotenv::dotenv;
 use module_bindings::*;
 use std::env;
 
 use spacetimedb_sdk::{DbContext, Table};
 
 fn main() {
+    dotenv().ok();
+    let id_token = env::var("SPACETIMEDB_TOKEN").unwrap();
+
     // The URI of the SpacetimeDB instance hosting our chat module.
     let host: String =
         env::var("SPACETIMEDB_HOST").unwrap_or("https://maincloud.spacetimedb.com".to_string());
@@ -16,6 +20,7 @@ fn main() {
     let conn = DbConnection::builder()
         .with_database_name(db_name)
         .with_uri(host)
+        .with_token(Some(id_token))
         .on_connect(|_, _, _| {
             println!("Connected to SpacetimeDB");
         })
@@ -39,10 +44,6 @@ fn main() {
     conn.db().person().on_insert(|_ctx, person| {
         println!("New person: {}", person.name);
     });
-
-    for ele in conn.db().person().iter() {
-        println!("{}", ele.name);
-    }
 
     // Keep the main thread alive so the connection stays open
     loop {
