@@ -1,0 +1,10 @@
+[package]
+name = "space_todo"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+exclude = ["spacetimedb"]
+
+[dependencies]
+spacetimedb-sdk = { version = "2.1.*" }
