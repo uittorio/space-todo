@@ -21,13 +21,17 @@ pub mod delete_board_reducer;
 pub mod step_away_from_board_reducer;
 pub mod todo_done_reducer;
 pub mod view_board_reducer;
+pub mod current_board_table;
 pub mod my_boards_table;
+pub mod my_user_table;
 pub mod todos_table;
 
 pub use board_type::Board;
 pub use todo_type::Todo;
 pub use user_type::User;
+pub use current_board_table::*;
 pub use my_boards_table::*;
+pub use my_user_table::*;
 pub use todos_table::*;
 pub use add_board_reducer::add_board;
 pub use add_todo_reducer::add_todo;
@@ -134,7 +138,9 @@ Reducer::TodoDone{
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-        my_boards: __sdk::TableUpdate<Board>,
+        current_board: __sdk::TableUpdate<Board>,
+    my_boards: __sdk::TableUpdate<Board>,
+    my_user: __sdk::TableUpdate<User>,
     todos: __sdk::TableUpdate<Todo>,
 }
 
@@ -146,7 +152,9 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
         for table_update in __sdk::transaction_update_iter_table_updates(raw) {
             match &table_update.table_name[..] {
 
-        "my_boards" => db_update.my_boards.append(my_boards_table::parse_table_update(table_update)?),
+        "current_board" => db_update.current_board.append(current_board_table::parse_table_update(table_update)?),
+    "my_boards" => db_update.my_boards.append(my_boards_table::parse_table_update(table_update)?),
+    "my_user" => db_update.my_user.append(my_user_table::parse_table_update(table_update)?),
     "todos" => db_update.todos.append(todos_table::parse_table_update(table_update)?),
 
                 unknown => {
@@ -170,7 +178,9 @@ impl __sdk::DbUpdate for DbUpdate {
     fn apply_to_client_cache(&self, cache: &mut __sdk::ClientCache<RemoteModule>) -> AppliedDiff<'_> {
                     let mut diff = AppliedDiff::default();
                 
-                diff.my_boards = cache.apply_diff_to_table::<Board>("my_boards", &self.my_boards);
+                diff.current_board = cache.apply_diff_to_table::<Board>("current_board", &self.current_board).with_updates_by_pk(|row| &row.id);
+        diff.my_boards = cache.apply_diff_to_table::<Board>("my_boards", &self.my_boards);
+        diff.my_user = cache.apply_diff_to_table::<User>("my_user", &self.my_user).with_updates_by_pk(|row| &row.id);
         diff.todos = cache.apply_diff_to_table::<Todo>("todos", &self.todos).with_updates_by_pk(|row| &row.id);
 
                     diff
@@ -179,7 +189,9 @@ fn parse_initial_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
                 let mut db_update = DbUpdate::default();
 for table_rows in raw.tables {
             match &table_rows.table[..] {
-                                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                                "current_board" => db_update.current_board.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "my_user" => db_update.my_user.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "todos" => db_update.todos.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 unknown => { return Err(__sdk::InternalError::unknown_name("table", unknown, "QueryRows").into()); }
 }}        Ok(db_update)
@@ -188,7 +200,9 @@ fn parse_unsubscribe_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
                 let mut db_update = DbUpdate::default();
 for table_rows in raw.tables {
             match &table_rows.table[..] {
-                                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                                "current_board" => db_update.current_board.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "my_user" => db_update.my_user.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "todos" => db_update.todos.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 unknown => { return Err(__sdk::InternalError::unknown_name("table", unknown, "QueryRows").into()); }
 }}        Ok(db_update)
@@ -199,7 +213,9 @@ for table_rows in raw.tables {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
-        my_boards: __sdk::TableAppliedDiff<'r, Board>,
+        current_board: __sdk::TableAppliedDiff<'r, Board>,
+    my_boards: __sdk::TableAppliedDiff<'r, Board>,
+    my_user: __sdk::TableAppliedDiff<'r, User>,
     todos: __sdk::TableAppliedDiff<'r, Todo>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -211,7 +227,9 @@ impl __sdk::InModule for AppliedDiff<'_> {
 
 impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
     fn invoke_row_callbacks(&self, event: &EventContext, callbacks: &mut __sdk::DbCallbacks<RemoteModule>) {
-                callbacks.invoke_table_row_callbacks::<Board>("my_boards", &self.my_boards, event);
+                callbacks.invoke_table_row_callbacks::<Board>("current_board", &self.current_board, event);
+        callbacks.invoke_table_row_callbacks::<Board>("my_boards", &self.my_boards, event);
+        callbacks.invoke_table_row_callbacks::<User>("my_user", &self.my_user, event);
         callbacks.invoke_table_row_callbacks::<Todo>("todos", &self.todos, event);
 }
 }
@@ -864,11 +882,15 @@ impl __sdk::SpacetimeModule for RemoteModule {
     type QueryBuilder = __sdk::QueryBuilder;
 
 fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
-                my_boards_table::register_table(client_cache);
+                current_board_table::register_table(client_cache);
+        my_boards_table::register_table(client_cache);
+        my_user_table::register_table(client_cache);
         todos_table::register_table(client_cache);
 }
 const ALL_TABLE_NAMES: &'static [&'static str] = &[
-                "my_boards",
+                "current_board",
+        "my_boards",
+        "my_user",
         "todos",
 ];
 }

@@ -7,7 +7,8 @@ pub struct User {
     id: Identity,
     boards: Vec<u32>,
 
-    current_board: Option<u32>,
+    #[index(btree)]
+    current_board: u32,
 }
 
 #[spacetimedb::table(accessor = todo)]
@@ -56,7 +57,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
         if let None = ctx.db.user().id().find(ctx.sender()) {
             ctx.db.user().insert(User {
                 boards: vec![],
-                current_board: None,
+                current_board: 0,
                 id: ctx.sender(),
             });
         }
@@ -123,7 +124,7 @@ pub fn view_board(ctx: &ReducerContext, board_id: u32) {
     }
 
     if let Some(mut user) = ctx.db.user().id().find(ctx.sender()) {
-        user.current_board = Some(board_id);
+        user.current_board = board_id;
         ctx.db.user().id().update(user);
     }
 }
@@ -157,7 +158,7 @@ pub fn assign_board(ctx: &ReducerContext, board_id: u32, user_id: Identity) {
 #[spacetimedb::reducer]
 pub fn step_away_from_board(ctx: &ReducerContext) {
     if let Some(mut user) = ctx.db.user().id().find(ctx.sender()) {
-        user.current_board = None;
+        user.current_board = 0;
         ctx.db.user().id().update(user);
     }
 }
@@ -216,13 +217,28 @@ pub fn todos(ctx: &ViewContext) -> impl Query<Todo> {
         .user()
         .id()
         .find(ctx.sender())
-        .and_then(|user| user.current_board)
+        .map(|user| user.current_board)
         .unwrap_or(0);
     // About the above 0, 0 is never an id
     // We can't do much here because views can't return Result or Option and the Query implementations have no default
     // This is the only way so that we return an empty list because no todo has board_id == 0
 
     ctx.from.todo().r#where(|todo| todo.board_id.eq(board_id))
+}
+
+#[spacetimedb::view(accessor = my_user, public)]
+pub fn my_user(ctx: &ViewContext) -> impl Query<User> {
+    ctx.from.user().r#where(|u| u.id.eq(ctx.sender()))
+}
+
+#[spacetimedb::view(accessor = current_board, public)]
+pub fn current_board(ctx: &ViewContext) -> impl Query<Board> {
+    ctx.from
+        .user()
+        .r#where(|u| u.id.eq(ctx.sender()))
+        .right_semijoin(ctx.from.board(), |user, board| {
+            user.current_board.eq(board.id)
+        })
 }
 
 fn can_access_board(db: &Local, identity: Identity, board_id: u32) -> bool {

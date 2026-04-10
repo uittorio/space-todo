@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{
 pub struct User {
     pub id: __sdk::Identity,
     pub boards: Vec::<u32>,
-    pub current_board: Option::<u32>,
+    pub current_board: u32,
 }
 
 
@@ -30,7 +30,7 @@ impl __sdk::InModule for User {
 pub struct UserCols {
     pub id: __sdk::__query_builder::Col<User, __sdk::Identity>,
     pub boards: __sdk::__query_builder::Col<User, Vec::<u32>>,
-    pub current_board: __sdk::__query_builder::Col<User, Option::<u32>>,
+    pub current_board: __sdk::__query_builder::Col<User, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for User {
@@ -49,6 +49,7 @@ impl __sdk::__query_builder::HasCols for User {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct UserIxCols {
+    pub current_board: __sdk::__query_builder::IxCol<User, u32>,
     pub id: __sdk::__query_builder::IxCol<User, __sdk::Identity>,
 }
 
@@ -56,6 +57,7 @@ impl __sdk::__query_builder::HasIxCols for User {
     type IxCols = UserIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         UserIxCols {
+            current_board: __sdk::__query_builder::IxCol::new(table_name, "current_board"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
 
         }
