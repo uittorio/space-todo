@@ -38,7 +38,7 @@ fn main() {
         .add_query(|q| q.from.todos())
         .subscribe();
 
-    conn.reducers.add_todo("Todo2".to_string()).ok();
+    conn.reducers.add_todo("Todo2".to_string(), 10).ok();
 
     conn.db.todos().on_insert(|_ctx, todo| {
         println!("TODO: {} - {}", todo.id, todo.name);

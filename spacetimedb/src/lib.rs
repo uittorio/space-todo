@@ -1,10 +1,13 @@
-use log::info;
-use spacetimedb::{Errno, Query};
+use spacetimedb::{Identity, Local, Query};
 use spacetimedb::{ReducerContext, Table, ViewContext};
 
-#[spacetimedb::table(accessor = person)]
-pub struct Person {
-    name: String,
+#[spacetimedb::table(accessor = user)]
+pub struct User {
+    #[primary_key]
+    id: Identity,
+    boards: Vec<u32>,
+
+    current_board: Option<u32>,
 }
 
 #[spacetimedb::table(accessor = todo)]
@@ -14,6 +17,19 @@ pub struct Todo {
     id: u32,
     name: String,
     done: bool,
+    #[index(btree)]
+    board_id: u32,
+    created_by: Identity,
+}
+
+#[spacetimedb::table(accessor = board)]
+pub struct Board {
+    #[primary_key]
+    #[auto_inc]
+    id: u32,
+    name: String,
+    owner: Identity,
+    participants: Vec<Identity>,
 }
 
 #[spacetimedb::reducer(init)]
@@ -22,11 +38,28 @@ pub fn init(_ctx: &ReducerContext) {
 }
 
 #[spacetimedb::reducer(client_connected)]
-pub fn identity_connected(_ctx: &ReducerContext) -> Result<(), String> {
-    let t = _ctx.sender_auth().jwt();
-    log::info!("{:?}", t.map(|f| f.()));
-    if _ctx.sender_auth().jwt().is_none() {
-        return Err("No ano".into());
+pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
+    let token = ctx.sender_auth().jwt();
+    if token
+        .map(|token| token.issuer() == "localhost")
+        .unwrap_or(true)
+    {
+        return Err("Anonymous cannot access this app".into());
+    }
+
+    const ADMINS_IDS: [&str; 2] = [
+        "c2007e001f644897d350fd8a2de9197e78a48b92008d994dac86c38c8b0d399b",
+        "c200f20bc8e521a559adc9d8c922d621a513f8f78f0dfd85f8e63c291c082445",
+    ];
+
+    if ADMINS_IDS.contains(&ctx.sender().to_hex().as_str()) {
+        if let None = ctx.db.user().id().find(ctx.sender()) {
+            ctx.db.user().insert(User {
+                boards: vec![],
+                current_board: None,
+                id: ctx.sender(),
+            });
+        }
     }
 
     Ok(())
@@ -38,36 +71,164 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 }
 
 #[spacetimedb::reducer]
-pub fn add(ctx: &ReducerContext, name: String) {
-    ctx.db.person().insert(Person { name });
+pub fn add_board(ctx: &ReducerContext, name: String) {
+    let Some(mut user) = ctx.db.user().id().find(ctx.sender()) else {
+        return;
+    };
+
+    let board = ctx.db.board().insert(Board {
+        id: 0,
+        name,
+        owner: ctx.sender(),
+        participants: vec![ctx.sender()],
+    });
+
+    user.boards.push(board.id);
+    ctx.db.user().id().update(user);
 }
 
 #[spacetimedb::reducer]
-pub fn say_hello(ctx: &ReducerContext) {
-    for person in ctx.db.person().iter() {
-        log::info!("Hello, {}!", person.name);
+pub fn delete_board(ctx: &ReducerContext, board_id: u32) -> Result<(), String> {
+    let Some(board) = ctx.db.board().id().find(board_id) else {
+        return Ok(());
+    };
+
+    if board.owner != ctx.sender() {
+        return Ok(());
     }
-    log::info!("Hello, World!");
+
+    for mut user in board
+        .participants
+        .iter()
+        .flat_map(|p| ctx.db.user().id().find(p))
+    {
+        if let Some(pos) = user.boards.iter().position(|&b_id| b_id == board.id) {
+            user.boards.swap_remove(pos);
+        }
+        ctx.db.user().id().update(user);
+    }
+
+    for todo in ctx.db.todo().board_id().filter(board.id) {
+        ctx.db.todo().id().delete(todo.id);
+    }
+    ctx.db.board().id().delete(board.id);
+
+    Ok(())
 }
 
 #[spacetimedb::reducer]
-pub fn add_todo(ctx: &ReducerContext, name: String) {
+pub fn view_board(ctx: &ReducerContext, board_id: u32) {
+    if !can_access_board(&ctx.db, ctx.sender(), board_id) {
+        return;
+    }
+
+    if let Some(mut user) = ctx.db.user().id().find(ctx.sender()) {
+        user.current_board = Some(board_id);
+        ctx.db.user().id().update(user);
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn assign_board(ctx: &ReducerContext, board_id: u32, user_id: Identity) {
+    if !can_access_board(&ctx.db, ctx.sender(), board_id) {
+        return;
+    }
+
+    let Some(mut user) = ctx.db.user().id().find(user_id) else {
+        return;
+    };
+
+    let Some(mut board) = ctx.db.board().id().find(board_id) else {
+        return;
+    };
+
+    if !user.boards.contains(&board_id) {
+        user.boards.push(board_id);
+    }
+
+    if !board.participants.contains(&user.id) {
+        board.participants.push(user.id);
+    }
+
+    ctx.db.user().id().update(user);
+    ctx.db.board().id().update(board);
+}
+
+#[spacetimedb::reducer]
+pub fn step_away_from_board(ctx: &ReducerContext) {
+    if let Some(mut user) = ctx.db.user().id().find(ctx.sender()) {
+        user.current_board = None;
+        ctx.db.user().id().update(user);
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn add_todo(ctx: &ReducerContext, name: String, board_id: u32) -> Result<(), String> {
+    if !can_access_board(&ctx.db, ctx.sender(), board_id) {
+        return Err("Board not found".into());
+    }
+
     ctx.db.todo().insert(Todo {
         id: 0,
         name,
         done: false,
+        board_id,
+        created_by: ctx.sender(),
     });
+
+    Ok(())
 }
 
 #[spacetimedb::reducer]
-pub fn todo_done(ctx: &ReducerContext, id: u32) {
-    if let Some(mut todo) = ctx.db.todo().id().find(id) {
-        todo.done = true;
-        ctx.db.todo().id().update(todo);
+pub fn todo_done(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut todo) = ctx.db.todo().id().find(id) else {
+        return Ok(());
+    };
+
+    if !can_access_board(&ctx.db, ctx.sender(), todo.board_id) {
+        return Ok(());
     }
+
+    todo.done = true;
+    ctx.db.todo().id().update(todo);
+    Ok(())
+}
+
+#[spacetimedb::view(accessor = my_boards, public)]
+pub fn my_boards(ctx: &ViewContext) -> Vec<Board> {
+    ctx.db
+        .user()
+        .id()
+        .find(ctx.sender())
+        .map(|user| {
+            user.boards
+                .iter()
+                .filter_map(|board_id| ctx.db.board().id().find(board_id))
+                .collect::<Vec<Board>>()
+        })
+        .unwrap_or_default()
 }
 
 #[spacetimedb::view(accessor = todos, public)]
 pub fn todos(ctx: &ViewContext) -> impl Query<Todo> {
-    ctx.from.todo()
+    let board_id = ctx
+        .db
+        .user()
+        .id()
+        .find(ctx.sender())
+        .and_then(|user| user.current_board)
+        .unwrap_or(0);
+    // About the above 0, 0 is never an id
+    // We can't do much here because views can't return Result or Option and the Query implementations have no default
+    // This is the only way so that we return an empty list because no todo has board_id == 0
+
+    ctx.from.todo().r#where(|todo| todo.board_id.eq(board_id))
+}
+
+fn can_access_board(db: &Local, identity: Identity, board_id: u32) -> bool {
+    db.user()
+        .id()
+        .find(identity)
+        .map(|user| user.boards.contains(&board_id))
+        .unwrap_or(false)
 }

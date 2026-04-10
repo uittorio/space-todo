@@ -4,23 +4,38 @@
 // This was generated using spacetimedb cli version 2.1.0 (commit 6981f48b4bc1a71c8dd9bdfe5a2c343f6370243d).
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
 
-pub mod add_reducer;
-pub mod add_todo_reducer;
-pub mod person_type;
-pub mod say_hello_reducer;
-pub mod todo_done_reducer;
+pub mod board_type;
 pub mod todo_type;
+pub mod user_type;
+pub mod add_board_reducer;
+pub mod add_todo_reducer;
+pub mod assign_board_reducer;
+pub mod delete_board_reducer;
+pub mod step_away_from_board_reducer;
+pub mod todo_done_reducer;
+pub mod view_board_reducer;
+pub mod my_boards_table;
 pub mod todos_table;
 
-pub use add_reducer::add;
-pub use add_todo_reducer::add_todo;
-pub use person_type::Person;
-pub use say_hello_reducer::say_hello;
-pub use todo_done_reducer::todo_done;
+pub use board_type::Board;
 pub use todo_type::Todo;
+pub use user_type::User;
+pub use my_boards_table::*;
 pub use todos_table::*;
+pub use add_board_reducer::add_board;
+pub use add_todo_reducer::add_todo;
+pub use assign_board_reducer::assign_board;
+pub use delete_board_reducer::delete_board;
+pub use step_away_from_board_reducer::step_away_from_board;
+pub use todo_done_reducer::todo_done;
+pub use view_board_reducer::view_board;
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -30,11 +45,29 @@ pub use todos_table::*;
 /// to indicate which reducer caused the event.
 
 pub enum Reducer {
-    Add { name: String },
-    AddTodo { name: String },
-    SayHello,
-    TodoDone { id: u32 },
+        AddBoard {
+        name: String,
+}    ,
+    AddTodo {
+        name: String,
+        board_id: u32,
+}    ,
+    AssignBoard {
+        board_id: u32,
+        user_id: __sdk::Identity,
+}    ,
+    DeleteBoard {
+        board_id: u32,
+}    ,
+    StepAwayFromBoard ,
+    TodoDone {
+        id: u32,
+}    ,
+    ViewBoard {
+        board_id: u32,
+}    ,
 }
+
 
 impl __sdk::InModule for Reducer {
     type Module = RemoteModule;
@@ -43,37 +76,68 @@ impl __sdk::InModule for Reducer {
 impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
-            Reducer::Add { .. } => "add",
+                        Reducer::AddBoard { .. } => "add_board",
             Reducer::AddTodo { .. } => "add_todo",
-            Reducer::SayHello => "say_hello",
+            Reducer::AssignBoard { .. } => "assign_board",
+            Reducer::DeleteBoard { .. } => "delete_board",
+            Reducer::StepAwayFromBoard => "step_away_from_board",
             Reducer::TodoDone { .. } => "todo_done",
+            Reducer::ViewBoard { .. } => "view_board",
             _ => unreachable!(),
-        }
-    }
+}
+}
     #[allow(clippy::clone_on_copy)]
-    fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
+fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
         match self {
-            Reducer::Add { name } => {
-                __sats::bsatn::to_vec(&add_reducer::AddArgs { name: name.clone() })
-            }
-            Reducer::AddTodo { name } => {
-                __sats::bsatn::to_vec(&add_todo_reducer::AddTodoArgs { name: name.clone() })
-            }
-            Reducer::SayHello => __sats::bsatn::to_vec(&say_hello_reducer::SayHelloArgs {}),
-            Reducer::TodoDone { id } => {
-                __sats::bsatn::to_vec(&todo_done_reducer::TodoDoneArgs { id: id.clone() })
-            }
+                        Reducer::AddBoard{
+                name,
+}             => __sats::bsatn::to_vec(&add_board_reducer::AddBoardArgs {
+                name: name.clone(),
+}),
+            Reducer::AddTodo{
+                name,
+                board_id,
+}             => __sats::bsatn::to_vec(&add_todo_reducer::AddTodoArgs {
+                name: name.clone(),
+                board_id: board_id.clone(),
+}),
+            Reducer::AssignBoard{
+                board_id,
+                user_id,
+}             => __sats::bsatn::to_vec(&assign_board_reducer::AssignBoardArgs {
+                board_id: board_id.clone(),
+                user_id: user_id.clone(),
+}),
+            Reducer::DeleteBoard{
+                board_id,
+}             => __sats::bsatn::to_vec(&delete_board_reducer::DeleteBoardArgs {
+                board_id: board_id.clone(),
+}),
+            Reducer::StepAwayFromBoard => __sats::bsatn::to_vec(&step_away_from_board_reducer::StepAwayFromBoardArgs {
+                }),
+Reducer::TodoDone{
+                id,
+}             => __sats::bsatn::to_vec(&todo_done_reducer::TodoDoneArgs {
+                id: id.clone(),
+}),
+            Reducer::ViewBoard{
+                board_id,
+}             => __sats::bsatn::to_vec(&view_board_reducer::ViewBoardArgs {
+                board_id: board_id.clone(),
+}),
             _ => unreachable!(),
-        }
-    }
+}
+}
 }
 
 #[derive(Default, Debug)]
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
+        my_boards: __sdk::TableUpdate<Board>,
     todos: __sdk::TableUpdate<Todo>,
 }
+
 
 impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
     type Error = __sdk::Error;
@@ -81,17 +145,16 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in __sdk::transaction_update_iter_table_updates(raw) {
             match &table_update.table_name[..] {
-                "todos" => db_update
-                    .todos
-                    .append(todos_table::parse_table_update(table_update)?),
+
+        "my_boards" => db_update.my_boards.append(my_boards_table::parse_table_update(table_update)?),
+    "todos" => db_update.todos.append(todos_table::parse_table_update(table_update)?),
 
                 unknown => {
                     return Err(__sdk::InternalError::unknown_name(
                         "table",
                         unknown,
                         "DatabaseUpdate",
-                    )
-                    .into());
+                    ).into());
                 }
             }
         }
@@ -104,73 +167,55 @@ impl __sdk::InModule for DbUpdate {
 }
 
 impl __sdk::DbUpdate for DbUpdate {
-    fn apply_to_client_cache(
-        &self,
-        cache: &mut __sdk::ClientCache<RemoteModule>,
-    ) -> AppliedDiff<'_> {
-        let mut diff = AppliedDiff::default();
+    fn apply_to_client_cache(&self, cache: &mut __sdk::ClientCache<RemoteModule>) -> AppliedDiff<'_> {
+                    let mut diff = AppliedDiff::default();
+                
+                diff.my_boards = cache.apply_diff_to_table::<Board>("my_boards", &self.my_boards);
+        diff.todos = cache.apply_diff_to_table::<Todo>("todos", &self.todos).with_updates_by_pk(|row| &row.id);
 
-        diff.todos = cache
-            .apply_diff_to_table::<Todo>("todos", &self.todos)
-            .with_updates_by_pk(|row| &row.id);
-
-        diff
-    }
-    fn parse_initial_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
-        let mut db_update = DbUpdate::default();
-        for table_rows in raw.tables {
-            match &table_rows.table[..] {
-                "todos" => db_update
-                    .todos
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                unknown => {
-                    return Err(
-                        __sdk::InternalError::unknown_name("table", unknown, "QueryRows").into(),
-                    );
+                    diff
                 }
-            }
-        }
-        Ok(db_update)
-    }
-    fn parse_unsubscribe_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
-        let mut db_update = DbUpdate::default();
-        for table_rows in raw.tables {
+fn parse_initial_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
+                let mut db_update = DbUpdate::default();
+for table_rows in raw.tables {
             match &table_rows.table[..] {
-                "todos" => db_update
-                    .todos
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                unknown => {
-                    return Err(
-                        __sdk::InternalError::unknown_name("table", unknown, "QueryRows").into(),
-                    );
-                }
-            }
-        }
-        Ok(db_update)
-    }
+                                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "todos" => db_update.todos.append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                unknown => { return Err(__sdk::InternalError::unknown_name("table", unknown, "QueryRows").into()); }
+}}        Ok(db_update)
+}
+fn parse_unsubscribe_rows(raw: __ws::v2::QueryRows) -> __sdk::Result<Self> {
+                let mut db_update = DbUpdate::default();
+for table_rows in raw.tables {
+            match &table_rows.table[..] {
+                                "my_boards" => db_update.my_boards.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "todos" => db_update.todos.append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                unknown => { return Err(__sdk::InternalError::unknown_name("table", unknown, "QueryRows").into()); }
+}}        Ok(db_update)
+}
 }
 
 #[derive(Default)]
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
+        my_boards: __sdk::TableAppliedDiff<'r, Board>,
     todos: __sdk::TableAppliedDiff<'r, Todo>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
+
 
 impl __sdk::InModule for AppliedDiff<'_> {
     type Module = RemoteModule;
 }
 
 impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
-    fn invoke_row_callbacks(
-        &self,
-        event: &EventContext,
-        callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
-    ) {
+    fn invoke_row_callbacks(&self, event: &EventContext, callbacks: &mut __sdk::DbCallbacks<RemoteModule>) {
+                callbacks.invoke_table_row_callbacks::<Board>("my_boards", &self.my_boards, event);
         callbacks.invoke_table_row_callbacks::<Todo>("todos", &self.todos, event);
-    }
 }
+}
+
 
 #[doc(hidden)]
 #[derive(Debug)]
@@ -219,16 +264,10 @@ impl __sdk::InModule for RemoteTables {
 ///
 /// - [`DbConnection::frame_tick`].
 #[cfg_attr(not(target_arch = "wasm32"), doc = "- [`DbConnection::run_threaded`].")]
-#[cfg_attr(
-    target_arch = "wasm32",
-    doc = "- [`DbConnection::run_background_task`]."
-)]
+#[cfg_attr(target_arch = "wasm32", doc = "- [`DbConnection::run_background_task`].")]
 /// - [`DbConnection::run_async`].
 /// - [`DbConnection::advance_one_message`].
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    doc = "- [`DbConnection::advance_one_message_blocking`]."
-)]
+#[cfg_attr(not(target_arch =  "wasm32"), doc = "- [`DbConnection::advance_one_message_blocking`].")]
 /// - [`DbConnection::advance_one_message_async`].
 ///
 /// Which of these methods you should call depends on the specific needs of your application,
@@ -415,6 +454,7 @@ impl __sdk::SubscriptionHandle for SubscriptionHandle {
     fn unsubscribe(self) -> __sdk::Result<()> {
         self.imp.unsubscribe_then(None)
     }
+
 }
 
 /// Alias trait for a [`__sdk::DbContext`] connected to this module,
@@ -422,23 +462,17 @@ impl __sdk::SubscriptionHandle for SubscriptionHandle {
 ///
 /// Users can use this trait as a boundary on definitions which should accept
 /// either a [`DbConnection`] or an [`EventContext`] and operate on either.
-pub trait RemoteDbContext:
-    __sdk::DbContext<
+pub trait RemoteDbContext: __sdk::DbContext<
     DbView = RemoteTables,
     Reducers = RemoteReducers,
     SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
->
-{
-}
-impl<
-        Ctx: __sdk::DbContext<
-            DbView = RemoteTables,
-            Reducers = RemoteReducers,
-            SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
-        >,
-    > RemoteDbContext for Ctx
-{
-}
+> {}
+impl<Ctx: __sdk::DbContext<
+    DbView = RemoteTables,
+    Reducers = RemoteReducers,
+    SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
+>> RemoteDbContext for Ctx {}
+
 
 /// An [`__sdk::DbContext`] augmented with a [`__sdk::Event`],
 /// passed to [`__sdk::Table::on_insert`], [`__sdk::Table::on_delete`] and [`__sdk::TableWithPrimaryKey::on_update`] callbacks.
@@ -813,6 +847,7 @@ impl __sdk::DbContext for ErrorContext {
 impl __sdk::ErrorContext for ErrorContext {}
 
 impl __sdk::SpacetimeModule for RemoteModule {
+    
     type DbConnection = DbConnection;
     type EventContext = EventContext;
     type ReducerEventContext = ReducerEventContext;
@@ -828,8 +863,12 @@ impl __sdk::SpacetimeModule for RemoteModule {
     type SubscriptionHandle = SubscriptionHandle;
     type QueryBuilder = __sdk::QueryBuilder;
 
-    fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
+fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
+                my_boards_table::register_table(client_cache);
         todos_table::register_table(client_cache);
-    }
-    const ALL_TABLE_NAMES: &'static [&'static str] = &["todos"];
+}
+const ALL_TABLE_NAMES: &'static [&'static str] = &[
+                "my_boards",
+        "todos",
+];
 }

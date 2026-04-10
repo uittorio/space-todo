@@ -2,7 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
+
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -10,11 +16,15 @@ pub struct Todo {
     pub id: u32,
     pub name: String,
     pub done: bool,
+    pub board_id: u32,
+    pub created_by: __sdk::Identity,
 }
+
 
 impl __sdk::InModule for Todo {
     type Module = super::RemoteModule;
 }
+
 
 /// Column accessor struct for the table `Todo`.
 ///
@@ -23,6 +33,8 @@ pub struct TodoCols {
     pub id: __sdk::__query_builder::Col<Todo, u32>,
     pub name: __sdk::__query_builder::Col<Todo, String>,
     pub done: __sdk::__query_builder::Col<Todo, bool>,
+    pub board_id: __sdk::__query_builder::Col<Todo, u32>,
+    pub created_by: __sdk::__query_builder::Col<Todo, __sdk::Identity>,
 }
 
 impl __sdk::__query_builder::HasCols for Todo {
@@ -32,6 +44,9 @@ impl __sdk::__query_builder::HasCols for Todo {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             done: __sdk::__query_builder::Col::new(table_name, "done"),
+            board_id: __sdk::__query_builder::Col::new(table_name, "board_id"),
+            created_by: __sdk::__query_builder::Col::new(table_name, "created_by"),
+
         }
     }
 }
@@ -40,6 +55,7 @@ impl __sdk::__query_builder::HasCols for Todo {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct TodoIxCols {
+    pub board_id: __sdk::__query_builder::IxCol<Todo, u32>,
     pub id: __sdk::__query_builder::IxCol<Todo, u32>,
 }
 
@@ -47,9 +63,12 @@ impl __sdk::__query_builder::HasIxCols for Todo {
     type IxCols = TodoIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         TodoIxCols {
+            board_id: __sdk::__query_builder::IxCol::new(table_name, "board_id"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+
         }
     }
 }
 
 impl __sdk::__query_builder::CanBeLookupTable for Todo {}
+

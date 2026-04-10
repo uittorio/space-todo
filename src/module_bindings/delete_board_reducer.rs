@@ -12,51 +12,47 @@ use spacetimedb_sdk::__codegen::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct AddTodoArgs {
-    pub name: String,
+pub(super) struct DeleteBoardArgs {
     pub board_id: u32,
 }
 
-impl From<AddTodoArgs> for super::Reducer {
-    fn from(args: AddTodoArgs) -> Self {
-        Self::AddTodo {
-            name: args.name,
+impl From<DeleteBoardArgs> for super::Reducer {
+    fn from(args: DeleteBoardArgs) -> Self {
+        Self::DeleteBoard {
             board_id: args.board_id,
 }
 }
 }
 
-impl __sdk::InModule for AddTodoArgs {
+impl __sdk::InModule for DeleteBoardArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `add_todo`.
+/// Extension trait for access to the reducer `delete_board`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait add_todo {
-    /// Request that the remote module invoke the reducer `add_todo` to run as soon as possible.
+pub trait delete_board {
+    /// Request that the remote module invoke the reducer `delete_board` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`add_todo:add_todo_then`] to run a callback after the reducer completes.
-    fn add_todo(&self, name: String,
-board_id: u32,
+    /// /// Use [`delete_board:delete_board_then`] to run a callback after the reducer completes.
+    fn delete_board(&self, board_id: u32,
 ) -> __sdk::Result<()> {
-        self.add_todo_then(name, board_id,  |_, _| {})
+        self.delete_board_then(board_id,  |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `add_todo` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `delete_board` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn add_todo_then(
+    fn delete_board_then(
         &self,
-        name: String,
-board_id: u32,
+        board_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -64,17 +60,16 @@ board_id: u32,
     ) -> __sdk::Result<()>;
 }
 
-impl add_todo for super::RemoteReducers {
-    fn add_todo_then(
+impl delete_board for super::RemoteReducers {
+    fn delete_board_then(
         &self,
-        name: String,
-board_id: u32,
+        board_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(AddTodoArgs { name, board_id,  }, callback)
+        self.imp.invoke_reducer_with_callback(DeleteBoardArgs { board_id,  }, callback)
     }
 }
 
