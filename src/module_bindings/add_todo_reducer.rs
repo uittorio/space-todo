@@ -6,42 +6,42 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct AddArgs {
+pub(super) struct AddTodoArgs {
     pub name: String,
 }
 
-impl From<AddArgs> for super::Reducer {
-    fn from(args: AddArgs) -> Self {
-        Self::Add { name: args.name }
+impl From<AddTodoArgs> for super::Reducer {
+    fn from(args: AddTodoArgs) -> Self {
+        Self::AddTodo { name: args.name }
     }
 }
 
-impl __sdk::InModule for AddArgs {
+impl __sdk::InModule for AddTodoArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `add`.
+/// Extension trait for access to the reducer `add_todo`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait add {
-    /// Request that the remote module invoke the reducer `add` to run as soon as possible.
+pub trait add_todo {
+    /// Request that the remote module invoke the reducer `add_todo` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`add:add_then`] to run a callback after the reducer completes.
-    fn add(&self, name: String) -> __sdk::Result<()> {
-        self.add_then(name, |_, _| {})
+    /// /// Use [`add_todo:add_todo_then`] to run a callback after the reducer completes.
+    fn add_todo(&self, name: String) -> __sdk::Result<()> {
+        self.add_todo_then(name, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `add` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `add_todo` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn add_then(
+    fn add_todo_then(
         &self,
         name: String,
 
@@ -51,8 +51,8 @@ pub trait add {
     ) -> __sdk::Result<()>;
 }
 
-impl add for super::RemoteReducers {
-    fn add_then(
+impl add_todo for super::RemoteReducers {
+    fn add_todo_then(
         &self,
         name: String,
 
@@ -61,6 +61,6 @@ impl add for super::RemoteReducers {
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(AddArgs { name }, callback)
+            .invoke_reducer_with_callback(AddTodoArgs { name }, callback)
     }
 }

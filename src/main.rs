@@ -1,9 +1,8 @@
 mod module_bindings;
 use dotenv::dotenv;
 use module_bindings::*;
-use std::env;
-
 use spacetimedb_sdk::{DbContext, Table};
+use std::env;
 
 fn main() {
     dotenv().ok();
@@ -33,16 +32,16 @@ fn main() {
 
     conn.run_threaded();
 
-    // Subscribe to the person table
     conn.subscription_builder()
-        .on_applied(|_ctx| println!("Subscripted to the person table"))
-        .on_error(|_ctx, e| eprintln!("There was an error when subscring to the person table: {e}"))
-        .add_query(|q| q.from.person())
+        .on_applied(|_ctx| println!("Subscripted to the table"))
+        .on_error(|_ctx, e| eprintln!("There was an error when subscring to the table: {e}"))
+        .add_query(|q| q.from.todos())
         .subscribe();
 
-    // Register a callback for when rows are inserted into the person table
-    conn.db().person().on_insert(|_ctx, person| {
-        println!("New person: {}", person.name);
+    conn.reducers.add_todo("Todo2".to_string()).ok();
+
+    conn.db.todos().on_insert(|_ctx, todo| {
+        println!("TODO: {} - {}", todo.id, todo.name);
     });
 
     // Keep the main thread alive so the connection stays open

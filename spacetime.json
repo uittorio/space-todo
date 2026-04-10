@@ -4,5 +4,12 @@
   },
   "server": "maincloud",
   "module-path": "./spacetimedb",
-  "database": "space-todo-fn915"
+  "database": "space-todo-fn915",
+  "generate": [
+    {
+      "language": "rust",
+      "out-dir": "./src/module_bindings",
+      "module-path": "./spacetimedb"
+    }
+  ]
 }
