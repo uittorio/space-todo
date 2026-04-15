@@ -1,3 +1,5 @@
-- Undone todo
 - Add board
 - Edit board name
+- assign board manually
+- Undone todo
+- rotto tutto senza boards
