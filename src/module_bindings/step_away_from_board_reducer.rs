@@ -2,23 +2,16 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{
-	self as __sdk,
-	__lib,
-	__sats,
-	__ws,
-};
-
+use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct StepAwayFromBoardArgs {
-    }
+pub(super) struct StepAwayFromBoardArgs {}
 
 impl From<StepAwayFromBoardArgs> for super::Reducer {
     fn from(args: StepAwayFromBoardArgs) -> Self {
         Self::StepAwayFromBoard
-}
+    }
 }
 
 impl __sdk::InModule for StepAwayFromBoardArgs {
@@ -36,8 +29,8 @@ pub trait step_away_from_board {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`step_away_from_board:step_away_from_board_then`] to run a callback after the reducer completes.
-    fn step_away_from_board(&self, ) -> __sdk::Result<()> {
-        self.step_away_from_board_then( |_, _| {})
+    fn step_away_from_board(&self) -> __sdk::Result<()> {
+        self.step_away_from_board_then(|_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `step_away_from_board` to run as soon as possible,
@@ -48,7 +41,7 @@ pub trait step_away_from_board {
     ///  and its status can be observed with the `callback`.
     fn step_away_from_board_then(
         &self,
-        
+
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
@@ -58,12 +51,12 @@ pub trait step_away_from_board {
 impl step_away_from_board for super::RemoteReducers {
     fn step_away_from_board_then(
         &self,
-        
+
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(StepAwayFromBoardArgs {  }, callback)
+        self.imp
+            .invoke_reducer_with_callback(StepAwayFromBoardArgs {}, callback)
     }
 }
-

@@ -2,13 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{
-	self as __sdk,
-	__lib,
-	__sats,
-	__ws,
-};
-
+use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -16,14 +10,12 @@ pub struct Board {
     pub id: u32,
     pub name: String,
     pub owner: __sdk::Identity,
-    pub participants: Vec::<__sdk::Identity>,
+    pub participants: Vec<__sdk::Identity>,
 }
-
 
 impl __sdk::InModule for Board {
     type Module = super::RemoteModule;
 }
-
 
 /// Column accessor struct for the table `Board`.
 ///
@@ -32,7 +24,7 @@ pub struct BoardCols {
     pub id: __sdk::__query_builder::Col<Board, u32>,
     pub name: __sdk::__query_builder::Col<Board, String>,
     pub owner: __sdk::__query_builder::Col<Board, __sdk::Identity>,
-    pub participants: __sdk::__query_builder::Col<Board, Vec::<__sdk::Identity>>,
+    pub participants: __sdk::__query_builder::Col<Board, Vec<__sdk::Identity>>,
 }
 
 impl __sdk::__query_builder::HasCols for Board {
@@ -43,7 +35,6 @@ impl __sdk::__query_builder::HasCols for Board {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             owner: __sdk::__query_builder::Col::new(table_name, "owner"),
             participants: __sdk::__query_builder::Col::new(table_name, "participants"),
-
         }
     }
 }
@@ -60,10 +51,8 @@ impl __sdk::__query_builder::HasIxCols for Board {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         BoardIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
-
         }
     }
 }
 
 impl __sdk::__query_builder::CanBeLookupTable for Board {}
-

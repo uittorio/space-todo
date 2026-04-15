@@ -2,13 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{
-	self as __sdk,
-	__lib,
-	__sats,
-	__ws,
-};
-
+use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -20,8 +14,8 @@ impl From<ViewBoardArgs> for super::Reducer {
     fn from(args: ViewBoardArgs) -> Self {
         Self::ViewBoard {
             board_id: args.board_id,
-}
-}
+        }
+    }
 }
 
 impl __sdk::InModule for ViewBoardArgs {
@@ -39,9 +33,8 @@ pub trait view_board {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`view_board:view_board_then`] to run a callback after the reducer completes.
-    fn view_board(&self, board_id: u32,
-) -> __sdk::Result<()> {
-        self.view_board_then(board_id,  |_, _| {})
+    fn view_board(&self, board_id: u32) -> __sdk::Result<()> {
+        self.view_board_then(board_id, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `view_board` to run as soon as possible,
@@ -69,7 +62,7 @@ impl view_board for super::RemoteReducers {
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(ViewBoardArgs { board_id,  }, callback)
+        self.imp
+            .invoke_reducer_with_callback(ViewBoardArgs { board_id }, callback)
     }
 }
-
