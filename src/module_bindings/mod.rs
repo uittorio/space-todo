@@ -18,7 +18,9 @@ pub mod my_user_table;
 pub mod step_away_from_board_reducer;
 pub mod todo_done_reducer;
 pub mod todo_type;
+pub mod todo_undone_reducer;
 pub mod todos_table;
+pub mod update_board_reducer;
 pub mod update_todo_reducer;
 pub mod user_type;
 pub mod view_board_reducer;
@@ -35,7 +37,9 @@ pub use my_user_table::*;
 pub use step_away_from_board_reducer::step_away_from_board;
 pub use todo_done_reducer::todo_done;
 pub use todo_type::Todo;
+pub use todo_undone_reducer::todo_undone;
 pub use todos_table::*;
+pub use update_board_reducer::update_board;
 pub use update_todo_reducer::update_todo;
 pub use user_type::User;
 pub use view_board_reducer::view_board;
@@ -69,6 +73,13 @@ pub enum Reducer {
     TodoDone {
         id: u32,
     },
+    TodoUndone {
+        id: u32,
+    },
+    UpdateBoard {
+        name: String,
+        id: u32,
+    },
     UpdateTodo {
         name: String,
         id: u32,
@@ -92,6 +103,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::DeleteTodo { .. } => "delete_todo",
             Reducer::StepAwayFromBoard => "step_away_from_board",
             Reducer::TodoDone { .. } => "todo_done",
+            Reducer::TodoUndone { .. } => "todo_undone",
+            Reducer::UpdateBoard { .. } => "update_board",
             Reducer::UpdateTodo { .. } => "update_todo",
             Reducer::ViewBoard { .. } => "view_board",
             _ => unreachable!(),
@@ -128,6 +141,15 @@ impl __sdk::Reducer for Reducer {
             }
             Reducer::TodoDone { id } => {
                 __sats::bsatn::to_vec(&todo_done_reducer::TodoDoneArgs { id: id.clone() })
+            }
+            Reducer::TodoUndone { id } => {
+                __sats::bsatn::to_vec(&todo_undone_reducer::TodoUndoneArgs { id: id.clone() })
+            }
+            Reducer::UpdateBoard { name, id } => {
+                __sats::bsatn::to_vec(&update_board_reducer::UpdateBoardArgs {
+                    name: name.clone(),
+                    id: id.clone(),
+                })
             }
             Reducer::UpdateTodo { name, id } => {
                 __sats::bsatn::to_vec(&update_todo_reducer::UpdateTodoArgs {

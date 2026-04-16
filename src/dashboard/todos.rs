@@ -33,7 +33,10 @@ pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &
             .collect::<VecDeque<_>>()
     };
 
-    let is_creating_new_todo = model.is_edit_mode && model.current_todo_index.is_none();
+    let is_creating_new_todo = match model.current_view {
+        View::Boards => false,
+        View::Todos => model.is_edit_mode && model.current_todo_index.is_none(),
+    };
     if is_creating_new_todo && !model.todos.is_empty() {
         rows.push_front(Row::new([Cell::from("Placeholder for textarea")]));
     }
@@ -57,12 +60,17 @@ pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &
     let mut table_state = TableState::new().with_selected(model.current_todo_index);
     frame.render_stateful_widget(table, area, &mut table_state);
 
-    if model.is_edit_mode {
-        let text_area_index = model.current_todo_index.unwrap_or(0);
-        let line = area
-            .offset(Offset::new(2, 1 + 1 + text_area_index as i32))
-            .resize(Size::new(area.width - 2, 1));
-        frame.render_widget(Clear, line);
-        frame.render_widget(textarea, line);
+    match model.current_view {
+        View::Boards => {}
+        View::Todos => {
+            if model.is_edit_mode {
+                let text_area_index = model.current_todo_index.unwrap_or(0);
+                let line = area
+                    .offset(Offset::new(2, 1 + 1 + text_area_index as i32))
+                    .resize(Size::new(area.width - 2, 1));
+                frame.render_widget(Clear, line);
+                frame.render_widget(textarea, line);
+            }
+        }
     }
 }

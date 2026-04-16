@@ -4,9 +4,9 @@ use dotenv::dotenv;
 use module_bindings::*;
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::Style,
-    widgets::Block,
+    widgets::{Block, Paragraph},
 };
 use ratatui_textarea::TextArea;
 use spacetimedb_sdk::{DbContext, Table, TableWithPrimaryKey};
@@ -133,6 +133,10 @@ fn app(
     receiver: Receiver<AppEvent>,
     conn: &DbConnection,
 ) -> std::io::Result<()> {
+    let mut textarea = TextArea::new(vec![]);
+    textarea.set_placeholder_text("Type to create");
+    textarea.set_style(Style::new().on_black());
+
     let mut model = Model {
         boards: vec![],
         todos: vec![],
@@ -140,18 +144,14 @@ fn app(
         current_view: View::Boards,
         current_todo_index: None,
         is_edit_mode: false,
+        conn,
     };
-
-    let mut textarea = TextArea::new(vec![]);
-
-    textarea.set_placeholder_text("Type to create a todo");
-    textarea.set_style(Style::new().on_black());
 
     loop {
         for event in receiver.try_iter() {
             update(&mut model, event);
         }
-        terminal.draw(|frame| render(frame, &textarea, &mut model))?;
+        terminal.draw(|frame| render(frame, &mut textarea, &mut model))?;
 
         let event = crossterm::event::poll(Duration::from_millis(50))?;
 
@@ -161,27 +161,13 @@ fn app(
                     if model.is_edit_mode {
                         match key_event.code {
                             KeyCode::Esc => {
-                                model.is_edit_mode = false;
+                                update(&mut model, AppEvent::CloseEditMode);
                                 textarea.clear();
                             }
                             KeyCode::Enter => {
-                                let Some(current_board_id) = model.current_board_id else {
-                                    // Show error!
-                                    // We don't have errors so we just bail
-                                    continue;
-                                };
                                 let todo_name = textarea.lines().join(" ").trim().to_string();
-
-                                if let Some(index) = model.current_todo_index
-                                    && !model.todos.is_empty()
-                                {
-                                    conn.reducers
-                                        .update_todo(todo_name, model.todos[index].id)
-                                        .ok();
-                                } else {
-                                    conn.reducers.add_todo(todo_name, current_board_id).ok();
-                                }
-                                model.is_edit_mode = false;
+                                update(&mut model, AppEvent::AddOrUpdateItem(todo_name));
+                                update(&mut model, AppEvent::CloseEditMode);
                                 textarea.clear();
                             }
                             _ => {
@@ -193,58 +179,32 @@ fn app(
                             KeyCode::Char('q') => break Ok(()),
                             KeyCode::Left => update(&mut model, AppEvent::ChangeView(View::Boards)),
                             KeyCode::Right => update(&mut model, AppEvent::ChangeView(View::Todos)),
-                            KeyCode::Up => match model.current_view {
-                                View::Todos => move_up_todos(&mut model),
-                                View::Boards => move_up_boards(conn, &model),
-                            },
-                            KeyCode::Down => match model.current_view {
-                                View::Todos => move_down_todos(&mut model),
-                                View::Boards => move_down_boards(conn, &model),
-                            },
-                            KeyCode::Enter => match model.current_view {
+                            KeyCode::Up => update(&mut model, AppEvent::MoveUpInView),
+                            KeyCode::Down => update(&mut model, AppEvent::MoveDownInView),
+                            KeyCode::Char('e') => match model.current_view {
                                 View::Todos => {
-                                    model.is_edit_mode = true;
+                                    update(&mut model, AppEvent::EditMode);
                                     if let Some(index) = model.current_todo_index
                                         && !model.todos.is_empty()
                                     {
                                         textarea.insert_str(&model.todos[index].name);
-                                    }
+                                    };
                                 }
                                 View::Boards => {
-                                    update(&mut model, AppEvent::ChangeView(View::Todos))
-                                }
-                            },
-                            KeyCode::Char(' ') => match model.current_view {
-                                View::Todos => {
-                                    if let Some(index) = model.current_todo_index
-                                        && !model.todos.is_empty()
-                                    {
-                                        conn.reducers.todo_done(model.todos[index].id).ok();
-                                    }
-                                }
-                                View::Boards => {}
-                            },
-                            KeyCode::Char('a') => match model.current_view {
-                                View::Todos => {
-                                    model.is_edit_mode = true;
-                                    model.current_todo_index = None;
-                                }
-                                View::Boards => {}
-                            },
-                            KeyCode::Char('d') => match model.current_view {
-                                View::Todos => {
-                                    if let Some(index) = model.current_todo_index
-                                        && !model.todos.is_empty()
-                                    {
-                                        conn.reducers.delete_todo(model.todos[index].id).ok();
-                                    }
-                                }
-                                View::Boards => {
-                                    if let Some(board_id) = model.current_board_id {
-                                        conn.reducers.delete_board(board_id).ok();
+                                    update(&mut model, AppEvent::EditMode);
+
+                                    if let Some(id) = model.current_board_id {
+                                        if let Some(index) =
+                                            model.boards.iter().position(|b| b.id == id)
+                                        {
+                                            textarea.insert_str(&model.boards[index].name);
+                                        }
                                     }
                                 }
                             },
+                            KeyCode::Char(' ') => update(&mut model, AppEvent::Toggle),
+                            KeyCode::Char('a') => update(&mut model, AppEvent::Add),
+                            KeyCode::Char('d') => update(&mut model, AppEvent::Delete),
                             _ => {}
                         }
                     }
@@ -256,68 +216,36 @@ fn app(
     }
 }
 
-fn move_up_boards(conn: &DbConnection, model: &Model) {
-    let selected_board_index = model
-        .current_board_id
-        .as_ref()
-        .map(|current_board| model.boards.iter().position(|b| b.id == *current_board))
-        .flatten()
-        .unwrap_or(0);
+fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
+    let [top, bottom] = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Fill(1)])
+        .areas(frame.area());
 
-    let new_index = if selected_board_index == 0 {
-        model.boards.len() - 1
-    } else {
-        selected_board_index - 1
-    };
-    conn.reducers.view_board(model.boards[new_index].id).ok();
-}
+    let block = Block::bordered().title("Commands");
 
-fn move_down_boards(conn: &DbConnection, model: &Model) {
-    let selected_board_index = model
-        .current_board_id
-        .as_ref()
-        .map(|current_board| model.boards.iter().position(|b| b.id == *current_board))
-        .flatten()
-        .unwrap_or(0);
+    let paragraph = Paragraph::new(
+        "(-> <-) to focus view, (a) to add todos or boards | (e) to edit | (spacebar) to toggle todos | (d) delete | (q) quit",
+    )
+    .block(block)
+    .alignment(Alignment::Left);
 
-    conn.reducers
-        .view_board(model.boards[(selected_board_index + 1).rem_euclid(model.boards.len())].id)
-        .ok();
-}
+    frame.render_widget(paragraph, top);
 
-fn move_up_todos(model: &mut Model) {
-    let selected_todo_index = model.current_todo_index.unwrap_or(0);
-
-    let new_index = if selected_todo_index == 0 {
-        model.todos.len() - 1
-    } else {
-        selected_todo_index - 1
-    };
-    update(model, AppEvent::SelectTodoIndex(Some(new_index)));
-}
-
-fn move_down_todos(model: &mut Model) {
-    let selected_todo_index = model.current_todo_index.unwrap_or(0);
-    update(
-        model,
-        AppEvent::SelectTodoIndex(Some(
-            (selected_todo_index + 1).rem_euclid(model.todos.len()),
-        )),
-    );
-}
-
-fn render(frame: &mut Frame, textarea: &TextArea, model: &mut Model) {
     let [left, right] = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(vec![Constraint::Length(50), Constraint::Fill(1)])
-        .areas(frame.area());
+        .constraints([Constraint::Length(50), Constraint::Fill(1)])
+        .areas(bottom);
 
     let left_block = Block::bordered();
     let left_area = left_block.inner(left);
+
     let right_block = Block::bordered();
     let right_area = right_block.inner(right);
+
     frame.render_widget(left_block, left);
     frame.render_widget(right_block, right);
-    render_boards(frame, left_area, model);
+
+    render_boards(frame, left_area, textarea, model);
     render_todos(frame, right_area, textarea, model);
 }

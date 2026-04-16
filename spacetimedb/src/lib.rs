@@ -89,6 +89,21 @@ pub fn add_board(ctx: &ReducerContext, name: String) {
 }
 
 #[spacetimedb::reducer]
+pub fn update_board(ctx: &ReducerContext, name: String, id: u32) -> Result<(), String> {
+    let Some(mut board) = ctx.db.board().id().find(id) else {
+        return Ok(());
+    };
+
+    if !can_access_board(&ctx.db, ctx.sender(), board.id) {
+        return Ok(());
+    }
+
+    board.name = name;
+    ctx.db.board().id().update(board);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn delete_board(ctx: &ReducerContext, board_id: u32) -> Result<(), String> {
     let Some(board) = ctx.db.board().id().find(board_id) else {
         return Ok(());
@@ -221,6 +236,21 @@ pub fn todo_done(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     }
 
     todo.done = true;
+    ctx.db.todo().id().update(todo);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn todo_undone(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut todo) = ctx.db.todo().id().find(id) else {
+        return Ok(());
+    };
+
+    if !can_access_board(&ctx.db, ctx.sender(), todo.board_id) {
+        return Ok(());
+    }
+
+    todo.done = false;
     ctx.db.todo().id().update(todo);
     Ok(())
 }
