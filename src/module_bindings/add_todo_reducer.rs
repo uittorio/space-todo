@@ -2,7 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
+
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -16,8 +22,8 @@ impl From<AddTodoArgs> for super::Reducer {
         Self::AddTodo {
             name: args.name,
             board_id: args.board_id,
-        }
-    }
+}
+}
 }
 
 impl __sdk::InModule for AddTodoArgs {
@@ -35,8 +41,10 @@ pub trait add_todo {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`add_todo:add_todo_then`] to run a callback after the reducer completes.
-    fn add_todo(&self, name: String, board_id: u32) -> __sdk::Result<()> {
-        self.add_todo_then(name, board_id, |_, _| {})
+    fn add_todo(&self, name: String,
+board_id: u32,
+) -> __sdk::Result<()> {
+        self.add_todo_then(name, board_id,  |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `add_todo` to run as soon as possible,
@@ -48,7 +56,7 @@ pub trait add_todo {
     fn add_todo_then(
         &self,
         name: String,
-        board_id: u32,
+board_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,13 +68,13 @@ impl add_todo for super::RemoteReducers {
     fn add_todo_then(
         &self,
         name: String,
-        board_id: u32,
+board_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(AddTodoArgs { name, board_id }, callback)
+        self.imp.invoke_reducer_with_callback(AddTodoArgs { name, board_id,  }, callback)
     }
 }
+

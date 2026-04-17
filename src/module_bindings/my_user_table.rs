@@ -2,8 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
 use super::user_type::User;
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_user`.
 ///
@@ -44,12 +49,8 @@ impl<'ctx> __sdk::Table for MyUserTableHandle<'ctx> {
     type Row = User;
     type EventContext = super::EventContext;
 
-    fn count(&self) -> u64 {
-        self.imp.count()
-    }
-    fn iter(&self) -> impl Iterator<Item = User> + '_ {
-        self.imp.iter()
-    }
+    fn count(&self) -> u64 { self.imp.count() }
+    fn iter(&self) -> impl Iterator<Item = User> + '_ { self.imp.iter() }
 
     type InsertCallbackId = MyUserInsertCallbackId;
 
@@ -95,38 +96,39 @@ impl<'ctx> __sdk::TableWithPrimaryKey for MyUserTableHandle<'ctx> {
     }
 }
 
-/// Access to the `id` unique index on the table `my_user`,
-/// which allows point queries on the field of the same name
-/// via the [`MyUserIdUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.my_user().id().find(...)`.
-pub struct MyUserIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<User, __sdk::Identity>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> MyUserTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `my_user`.
-    pub fn id(&self) -> MyUserIdUnique<'ctx> {
-        MyUserIdUnique {
-            imp: self.imp.get_unique_constraint::<__sdk::Identity>("id"),
-            phantom: std::marker::PhantomData,
+        /// Access to the `id` unique index on the table `my_user`,
+        /// which allows point queries on the field of the same name
+        /// via the [`MyUserIdUnique::find`] method.
+        ///
+        /// Users are encouraged not to explicitly reference this type,
+        /// but to directly chain method calls,
+        /// like `ctx.db.my_user().id().find(...)`.
+        pub struct MyUserIdUnique<'ctx> {
+            imp: __sdk::UniqueConstraintHandle<User, __sdk::Identity>,
+            phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
         }
-    }
-}
 
-impl<'ctx> MyUserIdUnique<'ctx> {
-    /// Find the subscribed row whose `id` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &__sdk::Identity) -> Option<User> {
-        self.imp.find(col_val)
-    }
-}
+        impl<'ctx> MyUserTableHandle<'ctx> {
+            /// Get a handle on the `id` unique index on the table `my_user`.
+            pub fn id(&self) -> MyUserIdUnique<'ctx> {
+                MyUserIdUnique {
+                    imp: self.imp.get_unique_constraint::<__sdk::Identity>("id"),
+                    phantom: std::marker::PhantomData,
+                }
+            }
+        }
 
+        impl<'ctx> MyUserIdUnique<'ctx> {
+            /// Find the subscribed row whose `id` column value is equal to `col_val`,
+            /// if such a row is present in the client cache.
+            pub fn find(&self, col_val: &__sdk::Identity) -> Option<User> {
+                self.imp.find(col_val)
+            }
+        }
+        
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+
     let _table = client_cache.get_or_make_table::<User>("my_user");
     _table.add_unique_constraint::<__sdk::Identity>("id", |row| &row.id);
 }
@@ -136,24 +138,26 @@ pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
 ) -> __sdk::Result<__sdk::TableUpdate<User>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<User>", "TableUpdate")
-            .with_cause(e)
-            .into()
+        __sdk::InternalError::failed_parse(
+            "TableUpdate<User>",
+            "TableUpdate",
+        ).with_cause(e).into()
     })
 }
 
-#[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `User`.
-///
-/// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait my_userQueryTableAccess {
-    #[allow(non_snake_case)]
-    /// Get a query builder for the table `User`.
-    fn my_user(&self) -> __sdk::__query_builder::Table<User>;
-}
+        #[allow(non_camel_case_types)]
+        /// Extension trait for query builder access to the table `User`.
+        ///
+        /// Implemented for [`__sdk::QueryTableAccessor`].
+        pub trait my_userQueryTableAccess {
+            #[allow(non_snake_case)]
+            /// Get a query builder for the table `User`.
+            fn my_user(&self) -> __sdk::__query_builder::Table<User>;
+        }
 
-impl my_userQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_user(&self) -> __sdk::__query_builder::Table<User> {
-        __sdk::__query_builder::Table::new("my_user")
-    }
-}
+        impl my_userQueryTableAccess for __sdk::QueryTableAccessor {
+            fn my_user(&self) -> __sdk::__query_builder::Table<User> {
+                __sdk::__query_builder::Table::new("my_user")
+            }
+        }
+

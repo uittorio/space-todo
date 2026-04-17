@@ -2,7 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
+
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -12,8 +18,10 @@ pub(super) struct TodoUndoneArgs {
 
 impl From<TodoUndoneArgs> for super::Reducer {
     fn from(args: TodoUndoneArgs) -> Self {
-        Self::TodoUndone { id: args.id }
-    }
+        Self::TodoUndone {
+            id: args.id,
+}
+}
 }
 
 impl __sdk::InModule for TodoUndoneArgs {
@@ -31,8 +39,9 @@ pub trait todo_undone {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`todo_undone:todo_undone_then`] to run a callback after the reducer completes.
-    fn todo_undone(&self, id: u32) -> __sdk::Result<()> {
-        self.todo_undone_then(id, |_, _| {})
+    fn todo_undone(&self, id: u32,
+) -> __sdk::Result<()> {
+        self.todo_undone_then(id,  |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `todo_undone` to run as soon as possible,
@@ -60,7 +69,7 @@ impl todo_undone for super::RemoteReducers {
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(TodoUndoneArgs { id }, callback)
+        self.imp.invoke_reducer_with_callback(TodoUndoneArgs { id,  }, callback)
     }
 }
+

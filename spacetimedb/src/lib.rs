@@ -5,6 +5,8 @@ use spacetimedb::{ReducerContext, Table, ViewContext};
 pub struct User {
     #[primary_key]
     id: Identity,
+    #[index(btree)]
+    username: String,
     boards: Vec<u32>,
 
     #[index(btree)]
@@ -53,17 +55,23 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
         "c200f20bc8e521a559adc9d8c922d621a513f8f78f0dfd85f8e63c291c082445",
     ];
 
-    if ADMINS_IDS.contains(&ctx.sender().to_hex().as_str()) {
+    const ADMIN_USERNAMES: [&str; 2] = ["uittorio", "pmyl"];
+
+    let sender_id = ctx.sender().to_hex();
+    if let Some(admin_index) = ADMINS_IDS.iter().position(|id| id == &sender_id.as_str()) {
         if let None = ctx.db.user().id().find(ctx.sender()) {
             ctx.db.user().insert(User {
+                id: ctx.sender(),
+                username: ADMIN_USERNAMES[admin_index].to_string(),
                 boards: vec![],
                 current_board: 0,
-                id: ctx.sender(),
             });
         }
-    }
 
-    Ok(())
+        Ok(())
+    } else {
+        return Err("This app can only be used by its admins".into());
+    }
 }
 
 #[spacetimedb::reducer(client_disconnected)]

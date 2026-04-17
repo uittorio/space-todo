@@ -2,7 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
+
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -16,8 +22,8 @@ impl From<AssignBoardArgs> for super::Reducer {
         Self::AssignBoard {
             board_id: args.board_id,
             user_id: args.user_id,
-        }
-    }
+}
+}
 }
 
 impl __sdk::InModule for AssignBoardArgs {
@@ -35,8 +41,10 @@ pub trait assign_board {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`assign_board:assign_board_then`] to run a callback after the reducer completes.
-    fn assign_board(&self, board_id: u32, user_id: __sdk::Identity) -> __sdk::Result<()> {
-        self.assign_board_then(board_id, user_id, |_, _| {})
+    fn assign_board(&self, board_id: u32,
+user_id: __sdk::Identity,
+) -> __sdk::Result<()> {
+        self.assign_board_then(board_id, user_id,  |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `assign_board` to run as soon as possible,
@@ -48,7 +56,7 @@ pub trait assign_board {
     fn assign_board_then(
         &self,
         board_id: u32,
-        user_id: __sdk::Identity,
+user_id: __sdk::Identity,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,13 +68,13 @@ impl assign_board for super::RemoteReducers {
     fn assign_board_then(
         &self,
         board_id: u32,
-        user_id: __sdk::Identity,
+user_id: __sdk::Identity,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(AssignBoardArgs { board_id, user_id }, callback)
+        self.imp.invoke_reducer_with_callback(AssignBoardArgs { board_id, user_id,  }, callback)
     }
 }
+

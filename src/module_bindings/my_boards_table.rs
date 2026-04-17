@@ -2,8 +2,13 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use spacetimedb_sdk::__codegen::{
+	self as __sdk,
+	__lib,
+	__sats,
+	__ws,
+};
 use super::board_type::Board;
-use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_boards`.
 ///
@@ -44,12 +49,8 @@ impl<'ctx> __sdk::Table for MyBoardsTableHandle<'ctx> {
     type Row = Board;
     type EventContext = super::EventContext;
 
-    fn count(&self) -> u64 {
-        self.imp.count()
-    }
-    fn iter(&self) -> impl Iterator<Item = Board> + '_ {
-        self.imp.iter()
-    }
+    fn count(&self) -> u64 { self.imp.count() }
+    fn iter(&self) -> impl Iterator<Item = Board> + '_ { self.imp.iter() }
 
     type InsertCallbackId = MyBoardsInsertCallbackId;
 
@@ -80,7 +81,8 @@ impl<'ctx> __sdk::Table for MyBoardsTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<Board>("my_boards");
+
+        let _table = client_cache.get_or_make_table::<Board>("my_boards");
 }
 
 #[doc(hidden)]
@@ -88,24 +90,26 @@ pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
 ) -> __sdk::Result<__sdk::TableUpdate<Board>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<Board>", "TableUpdate")
-            .with_cause(e)
-            .into()
+        __sdk::InternalError::failed_parse(
+            "TableUpdate<Board>",
+            "TableUpdate",
+        ).with_cause(e).into()
     })
 }
 
-#[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `Board`.
-///
-/// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait my_boardsQueryTableAccess {
-    #[allow(non_snake_case)]
-    /// Get a query builder for the table `Board`.
-    fn my_boards(&self) -> __sdk::__query_builder::Table<Board>;
-}
+        #[allow(non_camel_case_types)]
+        /// Extension trait for query builder access to the table `Board`.
+        ///
+        /// Implemented for [`__sdk::QueryTableAccessor`].
+        pub trait my_boardsQueryTableAccess {
+            #[allow(non_snake_case)]
+            /// Get a query builder for the table `Board`.
+            fn my_boards(&self) -> __sdk::__query_builder::Table<Board>;
+        }
 
-impl my_boardsQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_boards(&self) -> __sdk::__query_builder::Table<Board> {
-        __sdk::__query_builder::Table::new("my_boards")
-    }
-}
+        impl my_boardsQueryTableAccess for __sdk::QueryTableAccessor {
+            fn my_boards(&self) -> __sdk::__query_builder::Table<Board> {
+                __sdk::__query_builder::Table::new("my_boards")
+            }
+        }
+
