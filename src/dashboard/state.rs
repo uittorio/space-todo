@@ -156,6 +156,10 @@ pub fn update(model: &mut Model, event: AppEvent) {
 }
 
 fn move_up_boards(conn: &DbConnection, model: &Model) {
+    if model.boards.is_empty() {
+        return;
+    }
+
     let selected_board_index = model
         .current_board_id
         .as_ref()
@@ -172,6 +176,10 @@ fn move_up_boards(conn: &DbConnection, model: &Model) {
 }
 
 fn move_down_boards(conn: &DbConnection, model: &Model) {
+    if model.boards.is_empty() {
+        return;
+    }
+
     let selected_board_index = model
         .current_board_id
         .as_ref()
@@ -185,6 +193,10 @@ fn move_down_boards(conn: &DbConnection, model: &Model) {
 }
 
 fn move_up_todos(model: &mut Model) {
+    if model.todos.is_empty() {
+        return;
+    }
+
     let selected_todo_index = model.current_todo_index.unwrap_or(0);
 
     let new_index = if selected_todo_index == 0 {
@@ -196,6 +208,10 @@ fn move_up_todos(model: &mut Model) {
 }
 
 fn move_down_todos(model: &mut Model) {
+    if model.todos.is_empty() {
+        return;
+    }
+
     let selected_todo_index = model.current_todo_index.unwrap_or(0);
     update(
         model,
