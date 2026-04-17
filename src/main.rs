@@ -179,6 +179,12 @@ fn app(
                             KeyCode::Char('q') => break Ok(()),
                             KeyCode::Left => update(&mut model, AppEvent::ChangeView(View::Boards)),
                             KeyCode::Right => update(&mut model, AppEvent::ChangeView(View::Todos)),
+                            KeyCode::Enter => match model.current_view {
+                                View::Todos => {}
+                                View::Boards => {
+                                    update(&mut model, AppEvent::ChangeView(View::Todos))
+                                }
+                            },
                             KeyCode::Up => update(&mut model, AppEvent::MoveUpInView),
                             KeyCode::Down => update(&mut model, AppEvent::MoveDownInView),
                             KeyCode::Char('e') => match model.current_view {

@@ -47,16 +47,19 @@ pub fn update(model: &mut Model, event: AppEvent) {
             if let Some(index) = model.todos.iter().position(|t| t.id == todo.id) {
                 model.todos[index] = todo;
             }
+            model.todos.sort_by_key(|t| t.done);
         }
         AppEvent::OnBoardDeleted(board) => {
             if let Some(index) = model.boards.iter().position(|b| b.id == board.id) {
                 model.boards.remove(index);
             }
+            model.todos.sort_by_key(|t| t.done);
         }
         AppEvent::OnTodoDeleted(todo) => {
             if let Some(index) = model.todos.iter().position(|b| b.id == todo.id) {
                 model.todos.remove(index);
             }
+            model.todos.sort_by_key(|t| t.done);
         }
         AppEvent::OnCurrentBoardUpdated(board) => {
             model.current_board_id = board;
