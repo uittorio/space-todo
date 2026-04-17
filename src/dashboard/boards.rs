@@ -10,7 +10,7 @@ use ratatui_textarea::TextArea;
 
 use crate::dashboard::state::{Model, View};
 
-pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &mut Model) {
+pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &Model) {
     let boards_empty = model.boards.is_empty();
 
     let mut rows = if boards_empty {
@@ -33,16 +33,6 @@ pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: 
         .flatten();
     let mut state = TableState::default().with_selected(selected_board_index);
 
-    let style = if let View::Boards = model.current_view {
-        Style::new().bold()
-    } else {
-        Style::new()
-    };
-
-    let header = Row::new(vec![Cell::from("Boards")])
-        .style(style)
-        .bottom_margin(1);
-
     let highlight_style = if let View::Boards = model.current_view {
         Style::new().reversed()
     } else {
@@ -59,7 +49,6 @@ pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: 
     }
 
     let mut table = Table::new(rows, [Constraint::Fill(1)])
-        .header(header)
         .row_highlight_style(highlight_style)
         .highlight_spacing(HighlightSpacing::Always);
 

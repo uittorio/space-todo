@@ -10,7 +10,7 @@ use ratatui_textarea::TextArea;
 
 use crate::dashboard::state::{Model, View};
 
-pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &mut Model) {
+pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &Model) {
     let todos_empty = model.todos.is_empty();
 
     let mut rows = if todos_empty {
@@ -41,18 +41,7 @@ pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &
         rows.push_front(Row::new([Cell::from("Placeholder for textarea")]));
     }
 
-    let style = if let View::Todos = model.current_view {
-        Style::new().bold()
-    } else {
-        Style::new()
-    };
-
-    let header = Row::new(vec![Cell::from("Todos")])
-        .style(style)
-        .bottom_margin(1);
-
     let table = Table::new(rows, [Constraint::Fill(1)])
-        .header(header)
         .row_highlight_style(Style::new().reversed())
         .highlight_symbol(">>")
         .highlight_spacing(HighlightSpacing::Always);

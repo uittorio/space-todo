@@ -243,11 +243,20 @@ fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
         .constraints([Constraint::Length(50), Constraint::Fill(1)])
         .areas(bottom);
 
-    let left_block = Block::bordered();
+    let mut left_block = Block::bordered()
+        .title("Boards")
+        .border_type(ratatui::widgets::BorderType::Rounded);
     let left_area = left_block.inner(left);
 
-    let right_block = Block::bordered();
+    let mut right_block = Block::bordered()
+        .title("Todos")
+        .border_type(ratatui::widgets::BorderType::Rounded);
     let right_area = right_block.inner(right);
+
+    match model.current_view {
+        View::Todos => right_block = right_block.border_style(Style::new().bold().cyan()),
+        View::Boards => left_block = left_block.border_style(Style::new().bold().cyan()),
+    }
 
     frame.render_widget(left_block, left);
     frame.render_widget(right_block, right);
