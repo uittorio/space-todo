@@ -2,12 +2,7 @@ mod module_bindings;
 use crossterm::event::{Event, KeyCode};
 use dotenv::dotenv;
 use module_bindings::*;
-use ratatui::{
-    DefaultTerminal, Frame,
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::Style,
-    widgets::{Block, Paragraph},
-};
+use ratatui::{DefaultTerminal, style::Style};
 use ratatui_textarea::TextArea;
 use spacetimedb_sdk::{DbContext, Table, TableWithPrimaryKey};
 use std::{
@@ -16,8 +11,10 @@ use std::{
     time::Duration,
 };
 
-use crate::dashboard::state::{AppEvent, Model, View, update};
-use crate::dashboard::{boards::render_boards, todos::render_todos};
+use crate::dashboard::{
+    render,
+    state::{AppEvent, Model, View, update},
+};
 mod dashboard;
 
 fn main() -> color_eyre::Result<()> {
@@ -145,6 +142,7 @@ fn app(
         current_todo_index: None,
         is_edit_mode: false,
         conn,
+        last_error: None,
     };
 
     loop {
@@ -220,47 +218,4 @@ fn app(
             _ => {}
         }
     }
-}
-
-fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
-    let [top, bottom] = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Fill(1)])
-        .areas(frame.area());
-
-    let block = Block::bordered().title("Commands");
-
-    let paragraph = Paragraph::new(
-        "(-> <-) to focus view, (a) to add todos or boards | (e) to edit | (spacebar) to toggle todos | (d) delete | (q) quit",
-    )
-    .block(block)
-    .alignment(Alignment::Left);
-
-    frame.render_widget(paragraph, top);
-
-    let [left, right] = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(50), Constraint::Fill(1)])
-        .areas(bottom);
-
-    let mut left_block = Block::bordered()
-        .title("Boards")
-        .border_type(ratatui::widgets::BorderType::Rounded);
-    let left_area = left_block.inner(left);
-
-    let mut right_block = Block::bordered()
-        .title("Todos")
-        .border_type(ratatui::widgets::BorderType::Rounded);
-    let right_area = right_block.inner(right);
-
-    match model.current_view {
-        View::Todos => right_block = right_block.border_style(Style::new().bold().cyan()),
-        View::Boards => left_block = left_block.border_style(Style::new().bold().cyan()),
-    }
-
-    frame.render_widget(left_block, left);
-    frame.render_widget(right_block, right);
-
-    render_boards(frame, left_area, textarea, model);
-    render_todos(frame, right_area, textarea, model);
 }

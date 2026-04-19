@@ -9,6 +9,7 @@ pub struct Model<'a> {
     pub current_todo_index: Option<usize>,
     pub is_edit_mode: bool,
     pub conn: &'a DbConnection,
+    pub last_error: Option<String>,
 }
 
 pub enum View {
@@ -36,6 +37,12 @@ pub enum AppEvent {
 }
 
 pub fn update(model: &mut Model, event: AppEvent) {
+    if let Err(error) = update_internal(model, event) {
+        model.last_error = Some(error);
+    }
+}
+
+fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
     match event {
         AppEvent::OnBoardAdded(board) => {
             model.boards.push(board);
@@ -84,7 +91,7 @@ pub fn update(model: &mut Model, event: AppEvent) {
                 let Some(current_board_id) = model.current_board_id else {
                     // Show error!
                     // We don't have errors so we just bail
-                    return ();
+                    return Ok(());
                 };
 
                 if let Some(index) = model.current_todo_index
@@ -94,28 +101,40 @@ pub fn update(model: &mut Model, event: AppEvent) {
                         .conn
                         .reducers
                         .update_todo(name, model.todos[index].id)
-                        .ok();
+                        .map_err(|e| e.to_string())?;
                 } else {
-                    model.conn.reducers.add_todo(name, current_board_id).ok();
+                    model
+                        .conn
+                        .reducers
+                        .add_todo(name, current_board_id)
+                        .map_err(|e| e.to_string())?;
                 }
             }
             View::Boards => {
                 if let Some(id) = model.current_board_id
                     && !model.boards.is_empty()
                 {
-                    model.conn.reducers.update_board(name, id).ok();
+                    model
+                        .conn
+                        .reducers
+                        .update_board(name, id)
+                        .map_err(|e| e.to_string())?;
                 } else {
-                    model.conn.reducers.add_board(name).ok();
+                    model
+                        .conn
+                        .reducers
+                        .add_board(name)
+                        .map_err(|e| e.to_string())?;
                 }
             }
         },
         AppEvent::MoveUpInView => match model.current_view {
             View::Todos => move_up_todos(model),
-            View::Boards => move_up_boards(model.conn, model),
+            View::Boards => move_up_boards(model.conn, model)?,
         },
         AppEvent::MoveDownInView => match model.current_view {
             View::Todos => move_down_todos(model),
-            View::Boards => move_down_boards(model.conn, model),
+            View::Boards => move_down_boards(model.conn, model)?,
         },
         AppEvent::Toggle => match model.current_view {
             View::Todos => {
@@ -123,9 +142,17 @@ pub fn update(model: &mut Model, event: AppEvent) {
                     && !model.todos.is_empty()
                 {
                     if model.todos[index].done {
-                        model.conn.reducers.todo_undone(model.todos[index].id).ok();
+                        model
+                            .conn
+                            .reducers
+                            .todo_undone(model.todos[index].id)
+                            .map_err(|e| e.to_string())?;
                     } else {
-                        model.conn.reducers.todo_done(model.todos[index].id).ok();
+                        model
+                            .conn
+                            .reducers
+                            .todo_done(model.todos[index].id)
+                            .map_err(|e| e.to_string())?;
                     }
                 }
             }
@@ -146,21 +173,31 @@ pub fn update(model: &mut Model, event: AppEvent) {
                 if let Some(index) = model.current_todo_index
                     && !model.todos.is_empty()
                 {
-                    model.conn.reducers.delete_todo(model.todos[index].id).ok();
+                    model
+                        .conn
+                        .reducers
+                        .delete_todo(model.todos[index].id)
+                        .map_err(|e| e.to_string())?;
                 }
             }
             View::Boards => {
                 if let Some(board_id) = model.current_board_id {
-                    model.conn.reducers.delete_board(board_id).ok();
+                    model
+                        .conn
+                        .reducers
+                        .delete_board(board_id)
+                        .map_err(|e| e.to_string())?;
                 }
             }
         },
     }
+
+    Ok(())
 }
 
-fn move_up_boards(conn: &DbConnection, model: &Model) {
+fn move_up_boards(conn: &DbConnection, model: &Model) -> Result<(), String> {
     if model.boards.is_empty() {
-        return;
+        return Ok(());
     }
 
     let selected_board_index = model
@@ -175,12 +212,16 @@ fn move_up_boards(conn: &DbConnection, model: &Model) {
     } else {
         selected_board_index - 1
     };
-    conn.reducers.view_board(model.boards[new_index].id).ok();
+    conn.reducers
+        .view_board(model.boards[new_index].id)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
-fn move_down_boards(conn: &DbConnection, model: &Model) {
+fn move_down_boards(conn: &DbConnection, model: &Model) -> Result<(), String> {
     if model.boards.is_empty() {
-        return;
+        return Ok(());
     }
 
     let selected_board_index = model
@@ -192,7 +233,9 @@ fn move_down_boards(conn: &DbConnection, model: &Model) {
 
     conn.reducers
         .view_board(model.boards[(selected_board_index + 1).rem_euclid(model.boards.len())].id)
-        .ok();
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 fn move_up_todos(model: &mut Model) {
