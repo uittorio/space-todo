@@ -5,7 +5,7 @@ use spacetimedb::{ReducerContext, Table, ViewContext};
 pub struct User {
     #[primary_key]
     id: Identity,
-    #[index(btree)]
+    #[unique]
     username: String,
     boards: Vec<u32>,
 
@@ -153,12 +153,12 @@ pub fn view_board(ctx: &ReducerContext, board_id: u32) {
 }
 
 #[spacetimedb::reducer]
-pub fn assign_board(ctx: &ReducerContext, board_id: u32, user_id: Identity) {
+pub fn assign_board(ctx: &ReducerContext, board_id: u32, username: String) {
     if !can_access_board(&ctx.db, ctx.sender(), board_id) {
         return;
     }
 
-    let Some(mut user) = ctx.db.user().id().find(user_id) else {
+    let Some(mut user) = ctx.db.user().username().find(username) else {
         return;
     };
 

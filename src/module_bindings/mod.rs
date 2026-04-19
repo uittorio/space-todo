@@ -66,7 +66,7 @@ pub enum Reducer {
 }    ,
     AssignBoard {
         board_id: u32,
-        user_id: __sdk::Identity,
+        username: String,
 }    ,
     DeleteBoard {
         board_id: u32,
@@ -133,10 +133,10 @@ fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
 }),
             Reducer::AssignBoard{
                 board_id,
-                user_id,
+                username,
 }             => __sats::bsatn::to_vec(&assign_board_reducer::AssignBoardArgs {
                 board_id: board_id.clone(),
-                user_id: user_id.clone(),
+                username: username.clone(),
 }),
             Reducer::DeleteBoard{
                 board_id,

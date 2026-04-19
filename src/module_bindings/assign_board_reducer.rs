@@ -14,14 +14,14 @@ use spacetimedb_sdk::__codegen::{
 #[sats(crate = __lib)]
 pub(super) struct AssignBoardArgs {
     pub board_id: u32,
-    pub user_id: __sdk::Identity,
+    pub username: String,
 }
 
 impl From<AssignBoardArgs> for super::Reducer {
     fn from(args: AssignBoardArgs) -> Self {
         Self::AssignBoard {
             board_id: args.board_id,
-            user_id: args.user_id,
+            username: args.username,
 }
 }
 }
@@ -42,9 +42,9 @@ pub trait assign_board {
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`assign_board:assign_board_then`] to run a callback after the reducer completes.
     fn assign_board(&self, board_id: u32,
-user_id: __sdk::Identity,
+username: String,
 ) -> __sdk::Result<()> {
-        self.assign_board_then(board_id, user_id,  |_, _| {})
+        self.assign_board_then(board_id, username,  |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `assign_board` to run as soon as possible,
@@ -56,7 +56,7 @@ user_id: __sdk::Identity,
     fn assign_board_then(
         &self,
         board_id: u32,
-user_id: __sdk::Identity,
+username: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -68,13 +68,13 @@ impl assign_board for super::RemoteReducers {
     fn assign_board_then(
         &self,
         board_id: u32,
-user_id: __sdk::Identity,
+username: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(AssignBoardArgs { board_id, user_id,  }, callback)
+        self.imp.invoke_reducer_with_callback(AssignBoardArgs { board_id, username,  }, callback)
     }
 }
 
