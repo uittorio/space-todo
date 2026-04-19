@@ -41,6 +41,10 @@ fn main() -> color_eyre::Result<()> {
             eprintln!("Connection error: {:?}", e);
             std::process::exit(1);
         })
+        .on_disconnect(|_ctx, e| {
+            eprintln!("Disconnected {:?}", e);
+            std::process::exit(1);
+        })
         .build()
         .expect("Failed to connect");
 
