@@ -47,18 +47,18 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
         AppEvent::OnBoardAdded(board) => {
             model.boards.push(board);
         }
+        AppEvent::OnBoardDeleted(board) => {
+            if let Some(index) = model.boards.iter().position(|b| b.id == board.id) {
+                model.boards.remove(index);
+            }
+        }
         AppEvent::OnTodoAdded(todo) => {
             model.todos.push(todo);
+            model.todos.sort_by_key(|t| t.done);
         }
         AppEvent::OnTodoUpdated(todo) => {
             if let Some(index) = model.todos.iter().position(|t| t.id == todo.id) {
                 model.todos[index] = todo;
-            }
-            model.todos.sort_by_key(|t| t.done);
-        }
-        AppEvent::OnBoardDeleted(board) => {
-            if let Some(index) = model.boards.iter().position(|b| b.id == board.id) {
-                model.boards.remove(index);
             }
             model.todos.sort_by_key(|t| t.done);
         }
