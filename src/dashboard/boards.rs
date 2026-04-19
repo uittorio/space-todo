@@ -65,7 +65,7 @@ pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: 
             if model.is_edit_mode {
                 let text_area_index = selected_board_index.unwrap_or(0);
                 let line = area
-                    .offset(Offset::new(2, 1 + 1 + text_area_index as i32))
+                    .offset(Offset::new(2, text_area_index as i32))
                     .resize(Size::new(area.width - 2, 1));
                 frame.render_widget(Clear, line);
                 frame.render_widget(textarea, line);
