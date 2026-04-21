@@ -7,17 +7,27 @@ use ratatui::{
 };
 use ratatui_textarea::TextArea;
 
-use crate::dashboard::{
-    boards::render_boards,
-    state::{Model, View},
-    todos::render_todos,
+use crate::{
+    dashboard::{
+        boards::render_boards,
+        state::{Model, View},
+        todos::render_todos,
+    },
+    logs::render::render_logs,
 };
 
 pub mod boards;
 pub mod state;
 pub mod todos;
 
-pub fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
+pub fn render(frame: &mut Frame, textarea: &mut TextArea, model: &Model) {
+    match model.current_view {
+        View::Logs => render_logs(frame, model),
+        View::Boards | View::Todos => render_dashboard(frame, textarea, model),
+    }
+}
+
+pub fn render_dashboard(frame: &mut Frame, textarea: &mut TextArea, model: &Model) {
     let [top, middle, bottom] = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -55,6 +65,7 @@ pub fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
     match model.current_view {
         View::Todos => right_block = right_block.border_style(Style::new().bold().cyan()),
         View::Boards => left_block = left_block.border_style(Style::new().bold().cyan()),
+        View::Logs => {}
     }
 
     frame.render_widget(left_block, left);
@@ -66,7 +77,7 @@ pub fn render(frame: &mut Frame, textarea: &mut TextArea, model: &mut Model) {
     let empty = String::new();
     let paragraph = Paragraph::new(
         Span::default()
-            .content(model.last_error.as_ref().unwrap_or(&empty).as_str())
+            .content(model.logger.last_error().unwrap_or(&empty).as_str())
             .style(Style::new().fg(Color::Red)),
     )
     .block(Block::bordered());

@@ -10,20 +10,27 @@ use ratatui::{DefaultTerminal, style::Style};
 use ratatui_textarea::TextArea;
 use spacetimedb_sdk::{DbContext, Table, TableWithPrimaryKey};
 
-use crate::dashboard::{
-    render,
-    state::{AppEvent, Model, View, update},
+use crate::{
+    dashboard::{
+        render,
+        state::{AppEvent, Model, View, update},
+    },
+    logs::Logger,
 };
 
 mod dashboard;
+mod logs;
 mod module_bindings;
 
 enum RunError {
-    Disconnected,
+    Disconnected(Option<Box<dyn Error>>),
     Other(Box<dyn Error>),
 }
 
 pub fn run(id_token: String, host: String, db_name: String) -> Result<(), Box<dyn Error>> {
+    let mut logger = Logger::default();
+    logger.info("App started");
+
     let mut burst_disconnections_count = 0;
     // Max length of time for the disconnection to be considered "burst"
     const BURST_MS: Duration = Duration::from_millis(1000);
@@ -32,9 +39,11 @@ pub fn run(id_token: String, host: String, db_name: String) -> Result<(), Box<dy
     loop {
         let start_time = Instant::now();
 
-        match run_with_connection(id_token.clone(), host.clone(), db_name.clone()) {
+        match run_with_connection(id_token.clone(), host.clone(), db_name.clone(), &mut logger) {
             Ok(_) => break,
-            Err(RunError::Disconnected) => {
+            Err(RunError::Disconnected(e)) => {
+                logger.error(e.map(|e| e.to_string()).unwrap_or("Unknown error".into()));
+
                 if Instant::now() - start_time < BURST_MS {
                     burst_disconnections_count += 1;
                 } else {
@@ -56,9 +65,17 @@ pub fn run(id_token: String, host: String, db_name: String) -> Result<(), Box<dy
     Ok(())
 }
 
-fn run_with_connection(id_token: String, host: String, db_name: String) -> Result<(), RunError> {
+fn run_with_connection(
+    id_token: String,
+    host: String,
+    db_name: String,
+    logger: &mut Logger,
+) -> Result<(), RunError> {
     let (tx, rx): (Sender<AppEvent>, Receiver<AppEvent>) = mpsc::channel();
-    let (disconnect_tx, disconnect_rx): (Sender<()>, Receiver<()>) = mpsc::channel();
+    let (disconnect_tx, disconnect_rx): (
+        Sender<Option<spacetimedb_sdk::Error>>,
+        Receiver<Option<spacetimedb_sdk::Error>>,
+    ) = mpsc::channel();
 
     // Connect to the database
     let conn = DbConnection::builder()
@@ -74,7 +91,7 @@ fn run_with_connection(id_token: String, host: String, db_name: String) -> Resul
         })
         .on_disconnect(move |_ctx, e| {
             eprintln!("Disconnected {:?}", e);
-            disconnect_tx.send(()).ok();
+            disconnect_tx.send(e).ok();
         })
         .build()
         .expect("Failed to connect");
@@ -154,7 +171,7 @@ fn run_with_connection(id_token: String, host: String, db_name: String) -> Resul
 
     color_eyre::install().map_err(|e| RunError::Other(e.into()))?;
 
-    ratatui::run(|a| app(a, rx, disconnect_rx, &conn))?;
+    ratatui::run(|terminal| app(terminal, rx, disconnect_rx, &conn, logger))?;
 
     conn.disconnect().map_err(|e| RunError::Other(e.into()))?;
 
@@ -164,8 +181,9 @@ fn run_with_connection(id_token: String, host: String, db_name: String) -> Resul
 fn app(
     terminal: &mut DefaultTerminal,
     receiver: Receiver<AppEvent>,
-    disconnect_receiver: Receiver<()>,
+    disconnect_receiver: Receiver<Option<spacetimedb_sdk::Error>>,
     conn: &DbConnection,
+    logger: &mut Logger,
 ) -> Result<(), RunError> {
     let mut textarea = TextArea::new(vec![]);
     textarea.set_placeholder_text("Type to create");
@@ -179,17 +197,18 @@ fn app(
         current_todo_index: None,
         is_edit_mode: false,
         conn,
-        last_error: None,
+        logger: logger,
     };
 
     loop {
-        if let Ok(()) = disconnect_receiver.try_recv() {
-            return Err(RunError::Disconnected);
+        if let Ok(e) = disconnect_receiver.try_recv() {
+            return Err(RunError::Disconnected(e.map(|e| e.into())));
         }
 
         for event in receiver.try_iter() {
             update(&mut model, event);
         }
+
         terminal
             .draw(|frame| render(frame, &mut textarea, &mut model))
             .map_err(|e| RunError::Other(e.into()))?;
@@ -218,7 +237,19 @@ fn app(
                         }
                     } else {
                         match key_event.code {
+                            KeyCode::Esc => {
+                                if let View::Logs = model.current_view {
+                                    update(&mut model, AppEvent::ChangeView(View::Boards));
+                                }
+                            }
                             KeyCode::Char('q') => break Ok(()),
+                            KeyCode::Char('l') => {
+                                if let View::Logs = model.current_view {
+                                    update(&mut model, AppEvent::ChangeView(View::Boards));
+                                } else {
+                                    update(&mut model, AppEvent::ChangeView(View::Logs))
+                                }
+                            }
                             KeyCode::Left => update(&mut model, AppEvent::ChangeView(View::Boards)),
                             KeyCode::Right => update(&mut model, AppEvent::ChangeView(View::Todos)),
                             KeyCode::Enter => match model.current_view {
@@ -226,6 +257,7 @@ fn app(
                                 View::Boards => {
                                     update(&mut model, AppEvent::ChangeView(View::Todos))
                                 }
+                                View::Logs => {}
                             },
                             KeyCode::Up => update(&mut model, AppEvent::MoveUpInView),
                             KeyCode::Down => update(&mut model, AppEvent::MoveDownInView),
@@ -249,6 +281,7 @@ fn app(
                                         }
                                     }
                                 }
+                                View::Logs => {}
                             },
                             KeyCode::Char(' ') => update(&mut model, AppEvent::Toggle),
                             KeyCode::Char('a') => update(&mut model, AppEvent::Add),

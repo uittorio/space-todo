@@ -1,4 +1,7 @@
-use crate::module_bindings::{self, Board, DbConnection, Todo};
+use crate::{
+    logs::Logger,
+    module_bindings::{self, Board, DbConnection, Todo},
+};
 use module_bindings::*;
 
 pub struct Model<'a> {
@@ -9,12 +12,13 @@ pub struct Model<'a> {
     pub current_todo_index: Option<usize>,
     pub is_edit_mode: bool,
     pub conn: &'a DbConnection,
-    pub last_error: Option<String>,
+    pub logger: &'a mut Logger,
 }
 
 pub enum View {
     Todos,
     Boards,
+    Logs,
 }
 
 pub enum AppEvent {
@@ -38,7 +42,7 @@ pub enum AppEvent {
 
 pub fn update(model: &mut Model, event: AppEvent) {
     if let Err(error) = update_internal(model, event) {
-        model.last_error = Some(error);
+        model.logger.error(error);
     }
 }
 
@@ -77,6 +81,7 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
             match model.current_view {
                 View::Todos => model.current_todo_index = Some(0),
                 View::Boards => model.current_todo_index = None,
+                View::Logs => {}
             }
         }
         AppEvent::SelectTodoIndex(todo_index) => model.current_todo_index = todo_index,
@@ -127,14 +132,17 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
                         .map_err(|e| e.to_string())?;
                 }
             }
+            View::Logs => {}
         },
         AppEvent::MoveUpInView => match model.current_view {
             View::Todos => move_up_todos(model),
             View::Boards => move_up_boards(model.conn, model)?,
+            View::Logs => {}
         },
         AppEvent::MoveDownInView => match model.current_view {
             View::Todos => move_down_todos(model),
             View::Boards => move_down_boards(model.conn, model)?,
+            View::Logs => {}
         },
         AppEvent::Toggle => match model.current_view {
             View::Todos => {
@@ -157,6 +165,7 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
                 }
             }
             View::Boards => {}
+            View::Logs => {}
         },
         AppEvent::Add => match model.current_view {
             View::Todos => {
@@ -167,6 +176,7 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
                 model.is_edit_mode = true;
                 model.current_board_id = None;
             }
+            View::Logs => {}
         },
         AppEvent::Delete => match model.current_view {
             View::Todos => {
@@ -189,6 +199,7 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
                         .map_err(|e| e.to_string())?;
                 }
             }
+            View::Logs => {}
         },
     }
 

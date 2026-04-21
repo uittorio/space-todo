@@ -42,6 +42,7 @@ pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: 
     let is_creating_new_board = match model.current_view {
         View::Boards => model.is_edit_mode && model.current_board_id.is_none(),
         View::Todos => false,
+        View::Logs => false,
     };
 
     if is_creating_new_board && !boards_empty {
@@ -72,5 +73,6 @@ pub fn render_boards(frame: &mut Frame, area: Rect, textarea: &TextArea, model: 
             }
         }
         View::Todos => {}
+        View::Logs => {}
     }
 }

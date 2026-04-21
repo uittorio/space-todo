@@ -36,6 +36,7 @@ pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &
     let is_creating_new_todo = match model.current_view {
         View::Boards => false,
         View::Todos => model.is_edit_mode && model.current_todo_index.is_none(),
+        View::Logs => false,
     };
     if is_creating_new_todo && !model.todos.is_empty() {
         rows.push_front(Row::new([Cell::from("Placeholder for textarea")]));
@@ -61,5 +62,6 @@ pub fn render_todos(frame: &mut Frame, area: Rect, textarea: &TextArea, model: &
                 frame.render_widget(textarea, line);
             }
         }
+        View::Logs => {}
     }
 }
