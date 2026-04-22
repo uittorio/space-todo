@@ -25,18 +25,14 @@ impl Logger {
     pub fn log(&mut self, log: Log) {
         const MAX_LOGS: usize = 100;
 
+        if let Log::Error(e) = &log {
+            self.last_error = Some(e.to_string());
+        }
+
         self.logs.push_back(log);
         if self.logs.len() > MAX_LOGS {
             self.logs.pop_front();
         }
-
-        self.last_error = self.logs.iter().rev().find_map(|e| {
-            if let Log::Error(e) = e {
-                Some(e.to_string())
-            } else {
-                None
-            }
-        });
     }
 
     pub fn logs(&self) -> impl DoubleEndedIterator<Item = &Log> {

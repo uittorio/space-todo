@@ -94,49 +94,53 @@ fn update_internal(model: &mut Model, event: AppEvent) -> Result<(), String> {
         AppEvent::EditMode => {
             model.is_edit_mode = true;
         }
-        AppEvent::AddOrUpdateItem(name) => match model.current_view {
-            View::Todos => {
-                let Some(current_board_id) = model.current_board_id else {
-                    // Show error!
-                    // We don't have errors so we just bail
-                    return Ok(());
-                };
+        AppEvent::AddOrUpdateItem(name) => {
+            if name.is_empty() {
+                return Err("Name cannot be empty".into());
+            }
 
-                if let Some(index) = model.current_todo_index
-                    && !model.todos.is_empty()
-                {
-                    model
-                        .conn
-                        .reducers
-                        .update_todo(name, model.todos[index].id)
-                        .map_err(|e| e.to_string())?;
-                } else {
-                    model
-                        .conn
-                        .reducers
-                        .add_todo(name, current_board_id)
-                        .map_err(|e| e.to_string())?;
+            match model.current_view {
+                View::Todos => {
+                    let Some(current_board_id) = model.current_board_id else {
+                        return Err("Cannot create todos from the board view".into());
+                    };
+
+                    if let Some(index) = model.current_todo_index
+                        && !model.todos.is_empty()
+                    {
+                        model
+                            .conn
+                            .reducers
+                            .update_todo(name, model.todos[index].id)
+                            .map_err(|e| e.to_string())?;
+                    } else {
+                        model
+                            .conn
+                            .reducers
+                            .add_todo(name, current_board_id)
+                            .map_err(|e| e.to_string())?;
+                    }
                 }
-            }
-            View::Boards => {
-                if let Some(id) = model.current_board_id
-                    && !model.boards.is_empty()
-                {
-                    model
-                        .conn
-                        .reducers
-                        .update_board(name, id)
-                        .map_err(|e| e.to_string())?;
-                } else {
-                    model
-                        .conn
-                        .reducers
-                        .add_board(name)
-                        .map_err(|e| e.to_string())?;
+                View::Boards => {
+                    if let Some(id) = model.current_board_id
+                        && !model.boards.is_empty()
+                    {
+                        model
+                            .conn
+                            .reducers
+                            .update_board(name, id)
+                            .map_err(|e| e.to_string())?;
+                    } else {
+                        model
+                            .conn
+                            .reducers
+                            .add_board(name)
+                            .map_err(|e| e.to_string())?;
+                    }
                 }
+                View::Logs => {}
             }
-            View::Logs => {}
-        },
+        }
         AppEvent::MoveUpInView => match model.current_view {
             View::Todos => move_up_todos(model),
             View::Boards => move_up_boards(model.conn, model)?,
