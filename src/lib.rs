@@ -111,6 +111,13 @@ fn run_with_connection(
         }
     });
 
+    conn.db.my_boards().on_delete({
+        let tx = tx.clone();
+        move |_, r| {
+            tx.send(AppEvent::OnBoardDeleted(r.clone())).ok();
+        }
+    });
+
     conn.db.todos().on_insert({
         let tx = tx.clone();
         move |_, r| {
@@ -122,13 +129,6 @@ fn run_with_connection(
         let tx = tx.clone();
         move |_, _, n| {
             tx.send(AppEvent::OnTodoUpdated(n.clone())).ok();
-        }
-    });
-
-    conn.db.my_boards().on_delete({
-        let tx = tx.clone();
-        move |_, r| {
-            tx.send(AppEvent::OnBoardDeleted(r.clone())).ok();
         }
     });
 

@@ -15,12 +15,14 @@ pub struct Model<'a> {
     pub logger: &'a mut Logger,
 }
 
+#[derive(Debug)]
 pub enum View {
     Todos,
     Boards,
     Logs,
 }
 
+#[derive(Debug)]
 pub enum AppEvent {
     OnBoardAdded(Board),
     OnBoardDeleted(Board),
@@ -41,6 +43,7 @@ pub enum AppEvent {
 }
 
 pub fn update(model: &mut Model, event: AppEvent) {
+    model.logger.info(format!("Event: {:?}", event));
     if let Err(error) = update_internal(model, event) {
         model.logger.error(error);
     }
